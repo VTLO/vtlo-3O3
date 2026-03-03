@@ -5,6 +5,7 @@ export class Sequencer {
   constructor() {
     this.patterns = [];
     this.currentPatternIndex = 0;
+    this.patternGroup = 0;
     this.currentStep = 0;
     this.bpm = 130;
     this.swing = 0;
@@ -20,7 +21,7 @@ export class Sequencer {
     this._lookahead = 0.1;
     this._scheduleInterval = 25;
 
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 32; i++) {
       if (i < PRESETS.length) {
         this.patterns.push({ steps: PRESETS[i].steps.map(s => ({ ...s })) });
       } else {
@@ -157,8 +158,15 @@ export class Sequencer {
   }
 
   selectPattern(idx) {
-    if (idx < 0 || idx >= this.patterns.length) return;
-    this.currentPatternIndex = idx;
+    const absolute = this.patternGroup * 8 + idx;
+    if (absolute < 0 || absolute >= this.patterns.length) return;
+    this.currentPatternIndex = absolute;
+  }
+
+  setGroup(group) {
+    this.patternGroup = Math.max(0, Math.min(3, Math.round(group)));
+    const localIdx = this.currentPatternIndex % 8;
+    this.currentPatternIndex = this.patternGroup * 8 + localIdx;
   }
 
   loadPreset(presetIdx) {
@@ -176,7 +184,7 @@ export class Sequencer {
 
   setAllPatterns(data) {
     if (!Array.isArray(data)) return;
-    for (let i = 0; i < Math.min(data.length, 16); i++) {
+    for (let i = 0; i < Math.min(data.length, 32); i++) {
       if (data[i]?.steps) {
         this.patterns[i] = { steps: data[i].steps.map(s => ({ ...s })) };
       }

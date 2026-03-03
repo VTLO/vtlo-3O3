@@ -238,6 +238,40 @@ function initUI() {
     knobs[cfg.id] = k;
   }
 
+  // Selector knobs (patt.group, mode)
+  const pattGroupEl = document.getElementById('knob-patt-group');
+  if (pattGroupEl) {
+    const k = new RotaryKnob(pattGroupEl, {
+      min: parseFloat(pattGroupEl.dataset.min),
+      max: parseFloat(pattGroupEl.dataset.max),
+      default: parseFloat(pattGroupEl.dataset.default),
+      step: parseFloat(pattGroupEl.dataset.step || 0),
+      label: 'knob-patt-group',
+    });
+    k.onChange = (val) => {
+      const group = Math.round(val);
+      sequencer.setGroup(group);
+      document.querySelectorAll('.pat-btn').forEach(b => {
+        b.classList.toggle('selected', parseInt(b.dataset.pat) === (sequencer.currentPatternIndex % 8));
+      });
+      updatePatternUI();
+      savePatterns(sequencer.getAllPatterns());
+    };
+    knobs['knob-patt-group'] = k;
+  }
+
+  const modeEl = document.getElementById('knob-mode');
+  if (modeEl) {
+    const k = new RotaryKnob(modeEl, {
+      min: parseFloat(modeEl.dataset.min),
+      max: parseFloat(modeEl.dataset.max),
+      default: parseFloat(modeEl.dataset.default),
+      step: parseFloat(modeEl.dataset.step || 0),
+      label: 'knob-mode',
+    });
+    knobs['knob-mode'] = k;
+  }
+
   // Waveform switch
   const wfEl = document.getElementById('waveform-switch');
   const wfSwitch = new ToggleSwitch(wfEl, { states: ['saw', 'square'], default: 0 });

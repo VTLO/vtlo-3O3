@@ -56,7 +56,10 @@ export class RotaryKnob {
     const onMove = (e) => {
       if (!this._dragging) return;
       const y = e.clientY ?? 0;
-      const delta = (this._startY - y) / 200;
+      const sensitivity = this.step > 0
+        ? Math.max(60, ((this.max - this.min) / this.step) * 30)
+        : 200;
+      const delta = (this._startY - y) / sensitivity;
       let norm = this._startVal + delta;
       norm = Math.max(0, Math.min(1, norm));
       this.value = this._denormalize(norm);
