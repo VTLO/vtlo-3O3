@@ -3,29 +3,45 @@
    Visual reference: Roland TB-303 hardware panel
    ═══════════════════════════════════════════════════════ */
 
+@font-face {
+  font-family: 'TeX Gyre Adventor';
+  src: url('../fonts/tex-gyre-adventor.bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alte DIN 1451 Mittelschrift';
+  src: url('../fonts/alte-din-1451-mittelschrift.regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --panel-bg: #cac4ba;
-  --panel-bg-light: #d4cec4;
-  --panel-bg-dark: #bab4aa;
-  --panel-border: #9a9488;
+  --panel-bg: #c6c2bc;
+  --panel-bg-light: #ccc8c2;
+  --panel-bg-dark: #b8b4ae;
+  --panel-border: #9a968e;
   --text-dark: #1a1a1a;
   --text-red: #c02020;
-  --text-muted: #6a6458;
-  --knob-bg: radial-gradient(circle at 40% 35%, #d8d2c8, #b8b2a8 40%, #9a948a 80%);
-  --knob-large-bg: radial-gradient(circle at 38% 32%, #5a5650, #3a3834 50%, #2a2826 90%);
+  --text-muted: #686460;
+  --knob-bg: radial-gradient(circle at 42% 38%, #b0aaa2, #8a8480 45%, #6a6460 85%);
+  --knob-large-bg: radial-gradient(circle at 40% 35%, #4a4844, #2c2a28 55%, #1a1a18 90%);
   --key-white: #eae6e0;
   --key-black: #1a1816;
   --key-white-active: #f4f0ec;
   --led-off: #5a2a2a;
   --led-on: #ff1a1a;
   --led-glow: 0 0 6px 2px rgba(255, 26, 26, 0.8);
-  --step-bg: linear-gradient(180deg, #d4cec4 0%, #c4beb4 100%);
-  --step-border: #a09a90;
-  --btn-bg: #c0bab0;
-  --btn-active: #b0aaa0;
-  --section-line: #a8a298;
+  --step-bg: linear-gradient(180deg, #ccc8c2 0%, #c0bcb6 100%);
+  --step-border: #9a968e;
+  --btn-bg: #b8b4ae;
+  --btn-active: #aaa6a0;
+  --section-line: #a09c96;
   --fx-bg: #2a2826;
-  --fx-text: #cac4ba;
+  --fx-text: #c6c2bc;
 }
 
 *,
@@ -96,9 +112,9 @@ body {
 }
 
 .power-btn {
-  background: linear-gradient(180deg, #d4cec4 0%, #c0bab0 100%);
+  background: linear-gradient(180deg, #ccc8c2 0%, #b8b4ae 100%);
   color: var(--text-dark);
-  border: 1px solid #a09a90;
+  border: 1px solid #9a968e;
   padding: 16px 48px;
   font-size: 20px;
   font-weight: 700;
@@ -110,7 +126,7 @@ body {
 }
 
 .power-btn:hover {
-  background: linear-gradient(180deg, #e0dad0 0%, #cac4ba 100%);
+  background: linear-gradient(180deg, #d8d4ce 0%, #c4c0ba 100%);
 }
 
 /* ─── Main panel ────────────────────────────────── */
@@ -242,20 +258,31 @@ body {
 .roland-logo {
   display: flex;
   align-items: center;
+  gap: 6px;
 }
 
-.roland-svg {
-  width: 140px;
+.roland-mark {
+  width: 30px;
   height: 28px;
+  flex-shrink: 0;
+}
+
+.roland-text {
+  font-family: 'TeX Gyre Adventor', "ITC Avant Garde Gothic", "Century Gothic", sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-dark);
+  letter-spacing: 0.5px;
+  line-height: 1;
 }
 
 .bass-line-text {
-  font-family: 'Georgia', 'Times New Roman', 'Palatino', serif;
-  font-size: 26px;
+  font-family: 'Alte DIN 1451 Mittelschrift', "DIN 1451 Mittelschrift", "DIN Alternate", "Bahnschrift", sans-serif;
+  font-size: 28px;
   font-style: italic;
   font-weight: 400;
   color: var(--text-dark);
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
 }
 
 /* ─── Knob widget ───────────────────────────────── */
@@ -280,12 +307,12 @@ body {
   height: 100%;
   border-radius: 50%;
   background: var(--knob-bg);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.18);
   box-shadow:
-    0 3px 6px rgba(0, 0, 0, 0.3),
-    0 1px 2px rgba(0, 0, 0, 0.15),
-    inset 0 2px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+    0 3px 8px rgba(0, 0, 0, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
   position: relative;
   transition: box-shadow 0.1s;
 }
@@ -293,7 +320,7 @@ body {
 .knob-widget.active .knob-body {
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .knob-indicator {
@@ -302,10 +329,10 @@ body {
   left: 50%;
   width: 2px;
   height: 11px;
-  background: #2a2826;
+  background: #e0dcd6;
   border-radius: 1px;
   transform: translateX(-50%);
-  box-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.4);
 }
 
 /* Large knobs (tempo, volume) */
@@ -316,19 +343,20 @@ body {
 
 .knob-large .knob-body {
   background: var(--knob-large-bg);
+  border-color: rgba(0, 0, 0, 0.25);
   box-shadow:
-    0 4px 10px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.5),
     0 2px 4px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25);
 }
 
 .knob-large .knob-indicator {
   height: 20px;
   top: 5px;
   width: 3px;
-  background: #d8d4cc;
-  box-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
+  background: #c8c4be;
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
 }
 
 /* Small knobs (FX) */
@@ -497,11 +525,11 @@ body {
 
 .bottom-section {
   padding: 10px 14px 8px;
-  background: linear-gradient(180deg, #c6c0b6 0%, #cac4ba 4%, var(--panel-bg) 100%);
-  border-top: 1px solid #a09a90;
-  border-left: 1px solid #b0aaa0;
-  border-right: 1px solid #b0aaa0;
-  border-bottom: 1px solid #b0aaa0;
+  background: linear-gradient(180deg, #c0bcb6 0%, #c4c0ba 4%, var(--panel-bg) 100%);
+  border-top: 1px solid #9a968e;
+  border-left: 1px solid #aaa6a0;
+  border-right: 1px solid #aaa6a0;
+  border-bottom: 1px solid #aaa6a0;
   border-radius: 0;
   margin: 0 8px 0;
   box-shadow:
@@ -557,9 +585,9 @@ body {
 }
 
 .key-btn.white-key {
-  background: linear-gradient(180deg, #f0ece6 0%, #e0dcd4 50%, #d6d0c8 100%);
+  background: linear-gradient(180deg, #eceae6 0%, #dcdad4 50%, #d0cec8 100%);
   color: var(--text-dark);
-  border: 1px solid #b0aaa0;
+  border: 1px solid #aaa8a2;
   box-shadow:
     0 3px 5px rgba(0, 0, 0, 0.2),
     0 1px 2px rgba(0, 0, 0, 0.15),
@@ -585,7 +613,7 @@ body {
 
 .key-btn.white-key:active,
 .key-btn.white-key.highlight {
-  background: linear-gradient(180deg, #f4f0ea 0%, #eae6de 50%, #e0dcd4 100%);
+  background: linear-gradient(180deg, #f0eee8 0%, #e6e4de 50%, #dcdad4 100%);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
@@ -634,8 +662,8 @@ body {
   flex: 1;
   min-height: 48px;
   min-width: 0;
-  background: linear-gradient(180deg, #d8d2c8 0%, #c8c2b8 50%, #beb8ae 100%);
-  border: 1px solid #a09a90;
+  background: linear-gradient(180deg, #ccc8c2 0%, #c0bcb6 50%, #b6b2ac 100%);
+  border: 1px solid #9a968e;
   border-radius: 2px;
   cursor: pointer;
   display: flex;
@@ -664,13 +692,13 @@ body {
 }
 
 .step-btn.playing {
-  background: linear-gradient(180deg, #e0d8cc 0%, #d0c8bc 100%);
+  background: linear-gradient(180deg, #d8d4ce 0%, #ccc8c2 100%);
   border-color: var(--text-red);
   box-shadow: 0 0 0 1px var(--text-red), inset 0 0 8px rgba(255, 26, 26, 0.06);
 }
 
 .step-btn.gate-on {
-  background: linear-gradient(180deg, #cec8be 0%, #b8b2a8 100%);
+  background: linear-gradient(180deg, #c4c0ba 0%, #b0aca6 100%);
 }
 
 .step-led {
@@ -738,8 +766,8 @@ body {
 }
 
 .transport-btn {
-  background: linear-gradient(180deg, #c8c2b8 0%, #b0aaa0 100%);
-  border: 1px solid #908a80;
+  background: linear-gradient(180deg, #c0bcb6 0%, #a8a49e 100%);
+  border: 1px solid #8a8680;
   border-radius: 3px;
   padding: 8px 16px;
   font-size: 11px;
@@ -758,7 +786,7 @@ body {
 }
 
 .transport-btn:active {
-  background: linear-gradient(180deg, #b8b2a8 0%, #a09a90 100%);
+  background: linear-gradient(180deg, #b0aca6 0%, #9a9690 100%);
   transform: translateY(1px);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
@@ -793,8 +821,8 @@ body {
 .pat-btn {
   width: 36px;
   height: 28px;
-  background: linear-gradient(180deg, #d4cec4 0%, #c0bab0 100%);
-  border: 1px solid #a09a90;
+  background: linear-gradient(180deg, #ccc8c2 0%, #b8b4ae 100%);
+  border: 1px solid #9a968e;
   border-radius: 2px;
   cursor: pointer;
   font-size: 11px;
@@ -809,10 +837,10 @@ body {
 }
 
 .pat-btn.selected {
-  background: linear-gradient(180deg, #908880 0%, #787068 100%);
-  color: #f0ece6;
-  border-color: #605850;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, #807c76 0%, #686460 100%);
+  color: #eae6e0;
+  border-color: #585450;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .transport-right {
@@ -838,8 +866,8 @@ body {
 /* ─── Small buttons ─────────────────────────────── */
 
 .small-btn {
-  background: linear-gradient(180deg, #c8c2b8 0%, #b4aea4 100%);
-  border: 1px solid #908a80;
+  background: linear-gradient(180deg, #c0bcb6 0%, #aaa6a0 100%);
+  border: 1px solid #8a8680;
   border-radius: 2px;
   padding: 4px 8px;
   font-size: 8px;
@@ -862,7 +890,7 @@ body {
 }
 
 .small-btn:active {
-  background: linear-gradient(180deg, #b4aea4 0%, #a09a90 100%);
+  background: linear-gradient(180deg, #aaa6a0 0%, #9a9690 100%);
   transform: translateY(1px);
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
@@ -873,10 +901,10 @@ body {
 }
 
 .toggle-btn.active {
-  background: linear-gradient(180deg, #787068 0%, #605850 100%);
-  color: #f0ece6;
-  border-color: #504840;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, #6a6660 0%, #504c48 100%);
+  color: #eae6e0;
+  border-color: #484440;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* ─── FX section ────────────────────────────────── */
@@ -956,8 +984,8 @@ body {
 }
 
 .util-btn {
-  background: linear-gradient(180deg, #c8c2b8 0%, #b4aea4 100%);
-  border: 1px solid #908a80;
+  background: linear-gradient(180deg, #c0bcb6 0%, #aaa6a0 100%);
+  border: 1px solid #8a8680;
   border-radius: 2px;
   padding: 4px 10px;
   font-size: 9px;
@@ -969,7 +997,7 @@ body {
 }
 
 .util-btn:active {
-  background: linear-gradient(180deg, #b4aea4 0%, #a09a90 100%);
+  background: linear-gradient(180deg, #aaa6a0 0%, #9a9690 100%);
 }
 
 .midi-status {
@@ -1019,9 +1047,13 @@ body {
     padding: 2px 12px 4px;
   }
 
-  .roland-svg {
-    width: 110px;
+  .roland-mark {
+    width: 24px;
     height: 22px;
+  }
+
+  .roland-text {
+    font-size: 20px;
   }
 
   .bass-line-text {
