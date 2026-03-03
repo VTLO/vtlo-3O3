@@ -7,7 +7,10 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>TB-303 Bass Line</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@audius/sdk@latest/dist/sdk.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tus-js-client@latest/dist/tus.min.js"></script>
   </head>
   <body>
     <div id="tb303" class="tb303-panel">
@@ -415,6 +418,7 @@
         <label class="util-btn" aria-label="Import patterns">
           IMPORT <input type="file" id="file-import" accept=".json" hidden />
         </label>
+        <button id="btn-upload" class="util-btn util-btn-upload" aria-label="Upload to Audius">UPLOAD</button>
         <span class="midi-status" id="midi-status">MIDI: --</span>
         <button id="btn-swing" class="util-btn" aria-label="Toggle swing">
           SWING: OFF
@@ -422,6 +426,37 @@
         <div class="audius-toggle-area">
           <span class="audius-toggle-label">AUDIUS</span>
           <div id="audius-mode-switch" data-label="Audius Mode"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ UPLOAD MODAL ═══ -->
+    <div id="upload-modal" class="upload-modal hidden">
+      <div class="upload-modal-content">
+        <button class="upload-close-btn" id="upload-close">&times;</button>
+        <h3 class="upload-heading">Upload to Audius</h3>
+
+        <div id="upload-step-auth" class="upload-step">
+          <p class="upload-text">Log in with your Audius account to upload tracks.</p>
+          <button id="btn-audius-login" class="upload-action-btn upload-login-btn">LOG IN WITH AUDIUS</button>
+        </div>
+
+        <div id="upload-step-title" class="upload-step hidden">
+          <label class="upload-label" for="track-title-input">Track Title</label>
+          <input type="text" id="track-title-input" class="upload-input" placeholder="My Acid Pattern" />
+          <button id="btn-start-upload" class="upload-action-btn">UPLOAD TRACK</button>
+        </div>
+
+        <div id="upload-step-progress" class="upload-step hidden">
+          <p class="upload-text" id="upload-status-text">Rendering audio...</p>
+          <div class="upload-progress-bar">
+            <div class="upload-progress-fill" id="upload-progress-fill"></div>
+          </div>
+        </div>
+
+        <div id="upload-step-done" class="upload-step hidden">
+          <p class="upload-text" id="upload-result-text"></p>
+          <a id="upload-track-link" href="#" target="_blank" class="upload-link"></a>
         </div>
       </div>
     </div>

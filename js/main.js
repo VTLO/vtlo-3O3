@@ -6,6 +6,10 @@ import {
   savePatterns, loadPatterns, saveKnobState, loadKnobState,
   exportPatternsJSON, importPatternsJSON, PRESETS
 } from './presets.js';
+import {
+  ensureSDK, setupOAuth, triggerLogin,
+  isLoggedIn, getUser, renderPatternToWAV, uploadTrack
+} from './audius-upload.js';
 
 let audioCtx = null;
 let workletNode = null;
@@ -438,6 +442,9 @@ function initUI() {
     }
   });
 
+  // Upload to Audius
+  initUploadUI();
+
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -597,6 +604,147 @@ function saveCurrentKnobState() {
     state[id] = knob.value;
   }
   saveKnobState(state);
+}
+
+// ─── Upload to Audius ────────────────────────────────
+
+function showUploadStep(stepId) {
+  document.querySelectorAll('.upload-step').forEach(el => el.classList.add('hidden'));
+  const target = document.getElementById(stepId);
+  if (target) target.classList.remove('hidden');
+}
+
+function openUploadModal() {
+  document.getElementById('upload-modal').classList.remove('hidden');
+}
+
+function closeUploadModal() {
+  document.getElementById('upload-modal').classList.add('hidden');
+}
+
+function initUploadUI() {
+  const modal = document.getElementById('upload-modal');
+  if (!modal) return;
+
+  document.getElementById('upload-close').addEventListener('click', closeUploadModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeUploadModal();
+  });
+
+  document.getElementById('btn-audius-login').addEventListener('click', () => {
+    triggerLogin();
+  });
+
+  document.getElementById('btn-start-upload').addEventListener('click', () => {
+    handleStartUpload();
+  });
+
+  try {
+    ensureSDK();
+    setupOAuth(
+      () => { showUploadStep('upload-step-title'); },
+      (err) => {
+        document.getElementById('upload-result-text').textContent = 'Auth error: ' + err;
+        showUploadStep('upload-step-done');
+      }
+    );
+  } catch (err) {
+    console.warn('Audius SDK init deferred:', err.message);
+  }
+
+  document.getElementById('btn-upload').addEventListener('click', () => {
+    if (!audioCtx) {
+      alert('Power on the synth first.');
+      return;
+    }
+
+    if (isLoggedIn()) {
+      showUploadStep('upload-step-title');
+    } else {
+      showUploadStep('upload-step-auth');
+    }
+    openUploadModal();
+  });
+}
+
+function getCurrentParamValues() {
+  const paramMap = {
+    'knob-cutoff': 'cutoff',
+    'knob-resonance': 'resonance',
+    'knob-envmod': 'envMod',
+    'knob-decay': 'decay',
+    'knob-accent': 'accentLevel',
+    'knob-volume': 'volume',
+    'knob-tuning': 'tuning',
+  };
+  const values = {};
+  for (const [knobId, paramName] of Object.entries(paramMap)) {
+    if (knobs[knobId]) values[paramName] = knobs[knobId].value;
+  }
+  values.waveform = knobs['waveform'] ? knobs['waveform'].value : 0;
+  return values;
+}
+
+async function handleStartUpload() {
+  const title = document.getElementById('track-title-input').value.trim();
+  if (!title) {
+    document.getElementById('track-title-input').focus();
+    return;
+  }
+
+  const progressFill = document.getElementById('upload-progress-fill');
+  const statusText = document.getElementById('upload-status-text');
+  showUploadStep('upload-step-progress');
+  progressFill.style.width = '0%';
+
+  try {
+    statusText.textContent = 'Rendering audio (8 loops)...';
+    progressFill.style.width = '15%';
+
+    const pattern = sequencer.pattern;
+    const bpm = sequencer.bpm;
+    const params = getCurrentParamValues();
+    const wavBlob = await renderPatternToWAV(pattern, bpm, params, 8);
+
+    statusText.textContent = 'Uploading to Audius...';
+    progressFill.style.width = '40%';
+
+    const result = await uploadTrack(title, wavBlob, pattern, bpm, (msg) => {
+      statusText.textContent = msg;
+      const pct = parseInt(progressFill.style.width) || 40;
+      progressFill.style.width = Math.min(pct + 15, 90) + '%';
+    });
+
+    progressFill.style.width = '100%';
+
+    const trackId = result?.data?.trackId || result?.trackId;
+    const user = getUser();
+    const resultText = document.getElementById('upload-result-text');
+    const trackLink = document.getElementById('upload-track-link');
+
+    resultText.textContent = 'Track uploaded successfully!';
+
+    if (trackId && user?.handle) {
+      const url = `https://audius.co/${user.handle}`;
+      trackLink.href = url;
+      trackLink.textContent = 'View on Audius';
+      trackLink.style.display = 'inline';
+    } else if (trackId) {
+      trackLink.href = `https://audius.co`;
+      trackLink.textContent = 'View on Audius';
+      trackLink.style.display = 'inline';
+    } else {
+      trackLink.style.display = 'none';
+    }
+
+    showUploadStep('upload-step-done');
+
+  } catch (err) {
+    console.error('Upload failed:', err);
+    document.getElementById('upload-result-text').textContent = 'Upload failed: ' + (err.message || err);
+    document.getElementById('upload-track-link').style.display = 'none';
+    showUploadStep('upload-step-done');
+  }
 }
 
 // ─── Audius mode ─────────────────────────────────────
