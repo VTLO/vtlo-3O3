@@ -1387,6 +1387,7 @@ body {
     padding: 8px 12px;
     gap: 8px;
     justify-content: center;
+    align-items: flex-start;
   }
 
   .tempo-area,

@@ -390,11 +390,17 @@ function initUI() {
     savePatterns(sequencer.getAllPatterns());
   });
 
-  // Octave buttons
+  // Octave buttons — shift selected step by octave and update keyboard octave
   document.getElementById('btn-oct-down').addEventListener('click', () => {
     if (currentOctave > 0) {
       currentOctave--;
       document.getElementById('octave-display').textContent = currentOctave;
+    }
+    const step = sequencer.pattern.steps[selectedStep];
+    if (step.gate && step.note - 12 >= 24) {
+      sequencer.transposeStep(selectedStep, -12);
+      updatePatternUI();
+      savePatterns(sequencer.getAllPatterns());
     }
   });
 
@@ -402,6 +408,12 @@ function initUI() {
     if (currentOctave < 5) {
       currentOctave++;
       document.getElementById('octave-display').textContent = currentOctave;
+    }
+    const step = sequencer.pattern.steps[selectedStep];
+    if (step.gate && step.note + 12 <= 72) {
+      sequencer.transposeStep(selectedStep, 12);
+      updatePatternUI();
+      savePatterns(sequencer.getAllPatterns());
     }
   });
 
