@@ -1367,6 +1367,508 @@ body {
   }
 }
 
+/* ═══════════════════════════════════════════════════════
+   AUDIUS MODE — Brand switching & toggle
+   ═══════════════════════════════════════════════════════ */
+
+.brand-audius {
+  display: none;
+}
+
+.audius-mark {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: #1a1a1a;
+}
+
+.audius-toggle-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.audius-toggle-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════
+   AUDIUS MODE — Full dark theme
+   Tokens: P300 #806AD8, P400 #9E8EE8, P500 #D8CFFF
+           S300 #C67CFF, S400 #CF90FF
+           N25-N950 grayscale
+   ═══════════════════════════════════════════════════════ */
+
+body.audius-mode {
+  background: #000;
+}
+
+body.audius-mode .brand-audius {
+  display: initial;
+}
+
+body.audius-mode .brand-roland {
+  display: none;
+}
+
+body.audius-mode .audius-mark {
+  color: #EDEDED;
+}
+
+/* Panel */
+body.audius-mode .tb303-panel {
+  background: linear-gradient(
+    180deg,
+    #282828 0%,
+    #222 4%,
+    #1C1C1C 15%,
+    #1A1A1A 50%,
+    #1C1C1C 80%,
+    #222 95%,
+    #282828 100%
+  );
+  box-shadow:
+    0 6px 40px rgba(128, 106, 216, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Top strip */
+body.audius-mode .top-strip {
+  background: linear-gradient(180deg, #232323 0%, #1C1C1C 100%);
+  border-bottom-color: #333;
+}
+
+body.audius-mode .top-strip::after {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+body.audius-mode .jack-label,
+body.audius-mode .wf-icons,
+body.audius-mode .knob-label {
+  color: #9E9E9E;
+}
+
+body.audius-mode .jack-label-sm {
+  color: #636363;
+}
+
+/* Standard knobs */
+body.audius-mode .knob-body {
+  background: radial-gradient(circle at 42% 38%, #474747, #333 45%, #1F1F1F 85%);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.5),
+    0 1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+
+body.audius-mode .knob-indicator {
+  background: #C67CFF;
+  box-shadow: 0 0 3px rgba(198, 124, 255, 0.4);
+}
+
+body.audius-mode .knob-widget:focus-visible .knob-body {
+  outline-color: #806AD8;
+}
+
+/* Large knobs (tempo, volume) */
+body.audius-mode .knob-large .knob-body {
+  background: radial-gradient(
+    circle at 44% 40%,
+    #474747 0%,
+    #3a3a3a 25%,
+    #2a2a2a 50%,
+    #222 75%,
+    #1a1a1a 100%
+  );
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+}
+
+body.audius-mode .knob-large .knob-indicator {
+  background: #C67CFF;
+  box-shadow: 0 0 4px rgba(198, 124, 255, 0.5);
+}
+
+body.audius-mode .knob-large::after {
+  background: linear-gradient(180deg, #1A1A1A 0%, #222 100%);
+  border-color: rgba(255, 255, 255, 0.04);
+  border-top-color: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Selector knobs (patt.group, mode) */
+body.audius-mode .knob-selector .knob-body {
+  background: radial-gradient(
+    circle at 44% 40%,
+    #474747 0%,
+    #3a3a3a 25%,
+    #2a2a2a 50%,
+    #222 75%,
+    #1a1a1a 100%
+  );
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.audius-mode .knob-selector .knob-indicator {
+  background: linear-gradient(
+    90deg,
+    #474747 0%,
+    #555 20%,
+    #636363 50%,
+    #555 80%,
+    #474747 100%
+  );
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Brand bar */
+body.audius-mode .brand-bar {
+  border-bottom-color: #333;
+}
+
+body.audius-mode .brand-bar::after {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+body.audius-mode .roland-text {
+  color: #EDEDED;
+}
+
+body.audius-mode .bass-line-text {
+  color: #C67CFF;
+}
+
+/* Toggle switch (waveform, etc.) */
+body.audius-mode .toggle-switch {
+  background: #333;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.6),
+    inset 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+body.audius-mode .switch-lever {
+  background: linear-gradient(180deg, #806AD8, #6A54B8);
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    0 0 6px rgba(128, 106, 216, 0.3);
+}
+
+/* Middle section */
+body.audius-mode .middle-section {
+  border-bottom-color: #333;
+}
+
+body.audius-mode .middle-section::after {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+body.audius-mode .section-label {
+  color: #9E9E9E;
+}
+
+body.audius-mode .section-label.red {
+  color: #C67CFF;
+}
+
+body.audius-mode .tempo-labels,
+body.audius-mode .volume-labels,
+body.audius-mode .mode-knob-labels {
+  color: #636363;
+}
+
+body.audius-mode .bpm-display {
+  color: #EDEDED;
+}
+
+body.audius-mode .title-main {
+  color: #EDEDED;
+  border-bottom-color: #EDEDED;
+}
+
+body.audius-mode .title-sub {
+  color: #757575;
+}
+
+body.audius-mode .power-label {
+  color: #636363;
+}
+
+/* Bottom section */
+body.audius-mode .bottom-section {
+  background: linear-gradient(180deg, #1A1A1A 0%, #1C1C1C 4%, #1F1F1F 100%);
+  border-color: #333;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+/* Keyboard */
+body.audius-mode .key-btn.white-key {
+  background: linear-gradient(180deg, #333 0%, #292929 50%, #222 100%);
+  color: #9E9E9E;
+  border-color: #474747;
+  box-shadow:
+    0 3px 5px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body.audius-mode .key-btn.black-key {
+  background: linear-gradient(180deg, #1A1A1A 0%, #0F0F0F 50%, #080808 100%);
+  color: #636363;
+  border-color: #0A0A0A;
+  box-shadow:
+    0 3px 5px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+body.audius-mode .key-btn.white-key:active,
+body.audius-mode .key-btn.white-key.highlight {
+  background: linear-gradient(180deg, #443873 0%, #3a2f63 50%, #332a58 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 10px rgba(128, 106, 216, 0.25);
+  color: #D8CFFF;
+}
+
+body.audius-mode .key-btn.black-key:active,
+body.audius-mode .key-btn.black-key.highlight {
+  background: linear-gradient(180deg, #332a58 0%, #261F40 50%, #1a1533 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 10px rgba(128, 106, 216, 0.25);
+  color: #D8CFFF;
+}
+
+/* Step buttons */
+body.audius-mode .step-btn {
+  background: linear-gradient(180deg, #292929 0%, #222 50%, #1C1C1C 100%);
+  border-color: #474747;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 1px 1px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.audius-mode .step-btn.selected {
+  border-color: #806AD8;
+  box-shadow:
+    0 0 0 2px rgba(128, 106, 216, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+body.audius-mode .step-btn.playing {
+  background: linear-gradient(180deg, #332a58 0%, #2a2348 100%);
+  border-color: #C67CFF;
+  box-shadow:
+    0 0 0 1px #C67CFF,
+    inset 0 0 8px rgba(198, 124, 255, 0.1);
+}
+
+body.audius-mode .step-btn.gate-on {
+  background: linear-gradient(180deg, #2a2a2a 0%, #252525 100%);
+}
+
+body.audius-mode .step-led {
+  background: #332a58;
+}
+
+body.audius-mode .step-led.lit {
+  background: #C67CFF;
+  box-shadow: 0 0 6px 2px rgba(198, 124, 255, 0.7);
+}
+
+body.audius-mode .step-led.accent {
+  background: #D7A3FF;
+  box-shadow: 0 0 8px 3px rgba(215, 163, 255, 0.8);
+}
+
+body.audius-mode .step-note-label {
+  color: #D1D1D1;
+}
+
+body.audius-mode .step-num {
+  color: #636363;
+}
+
+body.audius-mode .step-btn.slide-on::after {
+  background: #806AD8;
+}
+
+/* Transport */
+body.audius-mode .transport-btn {
+  background: linear-gradient(180deg, #333 0%, #282828 100%);
+  border-color: #474747;
+  color: #EDEDED;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body.audius-mode .transport-btn:active {
+  background: linear-gradient(180deg, #2a2a2a 0%, #222 100%);
+}
+
+body.audius-mode .transport-btn .led {
+  background: #332a58;
+}
+
+body.audius-mode .transport-btn .led.on {
+  background: #C67CFF;
+  box-shadow: 0 0 6px 2px rgba(198, 124, 255, 0.7);
+}
+
+/* Pattern buttons */
+body.audius-mode .pat-btn {
+  background: linear-gradient(180deg, #333 0%, #282828 100%);
+  border-color: #474747;
+  color: #D1D1D1;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.audius-mode .pat-btn.selected {
+  background: linear-gradient(180deg, #806AD8 0%, #6A54B8 100%);
+  color: #fff;
+  border-color: #9E8EE8;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.3),
+    0 0 8px rgba(128, 106, 216, 0.3);
+}
+
+/* Small buttons */
+body.audius-mode .small-btn {
+  background: linear-gradient(180deg, #333 0%, #282828 100%);
+  border-color: #474747;
+  color: #D1D1D1;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.audius-mode .small-btn:active {
+  background: linear-gradient(180deg, #282828 0%, #222 100%);
+}
+
+body.audius-mode .small-label {
+  color: #636363;
+}
+
+body.audius-mode .toggle-btn.active {
+  background: linear-gradient(180deg, #806AD8 0%, #6A54B8 100%);
+  color: #fff;
+  border-color: #9E8EE8;
+}
+
+/* Octave display */
+body.audius-mode .oct-display {
+  color: #EDEDED;
+}
+
+/* FX section */
+body.audius-mode .fx-section {
+  border-top-color: #333;
+}
+
+body.audius-mode .fx-toggle-btn {
+  background: #0F0F0F;
+  color: #9E9E9E;
+}
+
+body.audius-mode .fx-toggle-btn:hover {
+  background: #1A1A1A;
+}
+
+body.audius-mode .fx-panel {
+  background: #0F0F0F;
+}
+
+body.audius-mode .fx-label {
+  color: #D1D1D1;
+}
+
+body.audius-mode .fx-sub-label {
+  color: #636363;
+}
+
+body.audius-mode .fx-group .knob-small .knob-body {
+  background: radial-gradient(circle at 40% 35%, #3a3a3a, #222 60%, #141414 90%);
+}
+
+body.audius-mode .fx-group .knob-small .knob-indicator {
+  background: #C67CFF;
+}
+
+/* Utility bar */
+body.audius-mode .utility-bar {
+  background: #1A1A1A;
+  border-top-color: #333;
+}
+
+body.audius-mode .util-btn {
+  background: linear-gradient(180deg, #333 0%, #282828 100%);
+  border-color: #474747;
+  color: #D1D1D1;
+}
+
+body.audius-mode .util-btn:active {
+  background: linear-gradient(180deg, #282828 0%, #222 100%);
+}
+
+body.audius-mode .midi-status {
+  color: #636363;
+}
+
+body.audius-mode .audius-toggle-label {
+  color: #C67CFF;
+}
+
+/* Power overlay */
+body.audius-mode .power-overlay {
+  background: rgba(0, 0, 0, 0.95);
+}
+
+body.audius-mode .power-content {
+  color: #EDEDED;
+}
+
+body.audius-mode .power-title {
+  color: #EDEDED;
+}
+
+body.audius-mode .power-sub {
+  color: #757575;
+}
+
+body.audius-mode .power-btn {
+  background: linear-gradient(180deg, #806AD8 0%, #6A54B8 100%);
+  color: #fff;
+  border-color: #9E8EE8;
+  box-shadow: 0 3px 12px rgba(128, 106, 216, 0.4);
+}
+
+body.audius-mode .power-btn:hover {
+  background: linear-gradient(180deg, #9E8EE8 0%, #806AD8 100%);
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════ */
+
 @media (max-width: 480px) {
   .knob-strip {
     gap: 2px;

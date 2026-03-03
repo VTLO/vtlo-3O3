@@ -283,6 +283,24 @@ function initUI() {
   };
   knobs['waveform'] = wfSwitch;
 
+  // Audius mode switch
+  const audiusEl = document.getElementById('audius-mode-switch');
+  if (audiusEl) {
+    const audiusSwitch = new ToggleSwitch(audiusEl, { states: ['off', 'on'], default: 0 });
+    audiusSwitch.onChange = (val) => {
+      applyAudiusMode(val === 1);
+      saveCurrentKnobState();
+    };
+    knobs['audius-mode'] = audiusSwitch;
+
+    const saved = loadKnobState();
+    if (saved && saved['audius-mode'] === 1) {
+      audiusSwitch.value = 1;
+      audiusSwitch._render();
+      applyAudiusMode(true);
+    }
+  }
+
   // Step buttons (16)
   const stepContainer = document.getElementById('step-buttons');
   for (let i = 0; i < 16; i++) {
@@ -579,6 +597,29 @@ function saveCurrentKnobState() {
     state[id] = knob.value;
   }
   saveKnobState(state);
+}
+
+// ─── Audius mode ─────────────────────────────────────
+
+function applyAudiusMode(active) {
+  document.body.classList.toggle('audius-mode', active);
+  const titleMain = document.querySelector('.title-main');
+  const titleSub = document.querySelector('.title-sub');
+  const powerTitle = document.querySelector('.power-title');
+  const powerSub = document.querySelector('.power-sub');
+  if (active) {
+    if (titleMain) titleMain.textContent = 'AB-303';
+    if (titleSub) titleSub.textContent = 'Community Owned';
+    if (powerTitle) powerTitle.textContent = 'AB-303';
+    if (powerSub) powerSub.textContent = 'Audius Bass Line';
+    document.title = 'AB-303 Audius Bass Line';
+  } else {
+    if (titleMain) titleMain.textContent = 'TB-303';
+    if (titleSub) titleSub.textContent = 'Computer Controlled';
+    if (powerTitle) powerTitle.textContent = 'TB-303';
+    if (powerSub) powerSub.textContent = 'Bass Line Synthesizer';
+    document.title = 'TB-303 Bass Line';
+  }
 }
 
 // ─── Power on ────────────────────────────────────────
