@@ -1,0 +1,1172 @@
+/* ═══════════════════════════════════════════════════════
+   TB-303 Bass Line — Stylesheet
+   Visual reference: Roland TB-303 hardware panel
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+  --panel-bg: #c9b898;
+  --panel-bg-light: #d4c8a8;
+  --panel-bg-dark: #b8a480;
+  --panel-border: #a08860;
+  --text-dark: #2a2218;
+  --text-red: #c0382b;
+  --text-muted: #7a6a52;
+  --knob-bg: radial-gradient(circle at 40% 35%, #e8e0d4, #c8bcac 40%, #a89880 80%);
+  --knob-large-bg: radial-gradient(circle at 38% 32%, #ddd5c8, #b8a898 50%, #988878 90%);
+  --key-white: #d8d0c0;
+  --key-black: #2a2218;
+  --key-white-active: #f0ece4;
+  --led-off: #5a3030;
+  --led-on: #ff2020;
+  --led-glow: 0 0 6px 2px rgba(255, 32, 32, 0.7);
+  --step-bg: linear-gradient(180deg, #d8d0c0 0%, #c0b498 100%);
+  --step-border: #a09078;
+  --btn-bg: #b8a88c;
+  --btn-active: #a89878;
+  --section-line: #a89878;
+  --fx-bg: #3a3228;
+  --fx-text: #c9b898;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+body {
+  background: #1a1612;
+  color: var(--text-dark);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 12px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+
+/* ─── Power-on overlay ──────────────────────────── */
+
+.power-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 6, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.4s;
+}
+
+.power-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.power-content {
+  text-align: center;
+  color: var(--panel-bg);
+}
+
+.power-title {
+  font-size: 64px;
+  font-weight: 700;
+  letter-spacing: 6px;
+}
+
+.power-sub {
+  font-size: 18px;
+  font-style: italic;
+  margin-bottom: 32px;
+  color: var(--text-muted);
+}
+
+.power-btn {
+  background: var(--panel-bg);
+  color: var(--text-dark);
+  border: none;
+  padding: 16px 48px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.power-btn:hover {
+  background: var(--panel-bg-light);
+}
+
+/* ─── Main panel ────────────────────────────────── */
+
+.tb303-panel {
+  width: 100%;
+  max-width: 940px;
+  background: var(--panel-bg);
+  border-radius: 8px;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  position: relative;
+}
+
+/* ─── Top strip ─────────────────────────────────── */
+
+.top-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 8px;
+  background: linear-gradient(180deg, var(--panel-bg-light) 0%, var(--panel-bg) 100%);
+  border-bottom: 1px solid var(--section-line);
+}
+
+.top-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.jack-label {
+  font-size: 8px;
+  text-align: center;
+  line-height: 1.2;
+  color: var(--text-dark);
+  letter-spacing: 0.5px;
+}
+
+.jack-label-sm {
+  font-size: 7px;
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+}
+
+.waveform-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.wf-icons {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dark);
+}
+
+.knob-strip {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+}
+
+.knob-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.knob-label {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-dark);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.top-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ─── Brand bar ─────────────────────────────────── */
+
+.brand-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 20px 6px;
+  border-bottom: 2px solid var(--section-line);
+}
+
+.roland-logo {
+  font-size: 22px;
+  font-weight: 800;
+  font-style: italic;
+  color: var(--text-dark);
+  letter-spacing: -0.5px;
+}
+
+.bass-line-text {
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text-dark);
+  letter-spacing: 1px;
+}
+
+/* ─── Knob widget ───────────────────────────────── */
+
+.knob-widget {
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  position: relative;
+  outline: none;
+  touch-action: none;
+}
+
+.knob-widget:focus-visible .knob-body {
+  outline: 2px solid #4a90d9;
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+.knob-body {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--knob-bg);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  position: relative;
+  transition: box-shadow 0.1s;
+}
+
+.knob-widget.active .knob-body {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.knob-indicator {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 2px;
+  height: 12px;
+  background: var(--text-dark);
+  border-radius: 1px;
+  transform: translateX(-50%);
+}
+
+/* Large knobs (tempo, volume) */
+.knob-large {
+  width: 64px;
+  height: 64px;
+}
+
+.knob-large .knob-body {
+  background: var(--knob-large-bg);
+}
+
+.knob-large .knob-indicator {
+  height: 18px;
+  top: 4px;
+  width: 3px;
+}
+
+/* Small knobs (FX) */
+.knob-small {
+  width: 32px;
+  height: 32px;
+}
+
+.knob-small .knob-indicator {
+  height: 9px;
+  top: 2px;
+}
+
+/* ─── Toggle switch ─────────────────────────────── */
+
+.toggle-switch {
+  width: 32px;
+  height: 18px;
+  background: #4a4030;
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.switch-lever {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 14px;
+  background: linear-gradient(180deg, #e0d8cc, #c0b8a8);
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s;
+}
+
+.toggle-switch.on .switch-lever {
+  transform: translateX(16px);
+}
+
+/* ─── Middle section ────────────────────────────── */
+
+.middle-section {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  gap: 16px;
+  border-bottom: 2px solid var(--section-line);
+}
+
+.tempo-area,
+.volume-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tempo-labels,
+.volume-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 64px;
+  font-size: 7px;
+  color: var(--text-muted);
+}
+
+.bpm-display {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+  text-align: center;
+  min-width: 40px;
+}
+
+.mode-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.mode-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.patt-group {
+  display: flex;
+  gap: 8px;
+}
+
+.mode-switch-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.mode-labels {
+  display: flex;
+  gap: 12px;
+  font-size: 8px;
+  color: var(--text-muted);
+}
+
+.title-area {
+  flex: 2;
+  text-align: center;
+}
+
+.title-main {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--text-dark);
+}
+
+.title-sub {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+
+.power-label {
+  font-size: 7px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-dark);
+}
+
+.section-label.red {
+  color: var(--text-red);
+}
+
+/* ─── Bottom section ────────────────────────────── */
+
+.bottom-section {
+  padding: 8px 12px;
+  background: linear-gradient(180deg, var(--panel-bg) 0%, var(--panel-bg-dark) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Keyboard row */
+.keyboard-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.row-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-width: 56px;
+  gap: 4px;
+}
+
+.fn-label {
+  font-size: 8px;
+}
+
+.keyboard {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+.key-btn {
+  flex: 1;
+  min-height: 48px;
+  min-width: 0;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px 1px;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 600;
+  transition: background 0.1s;
+  position: relative;
+  outline: none;
+}
+
+.key-btn.white-key {
+  background: var(--key-white);
+  color: var(--text-dark);
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.2),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.key-btn.black-key {
+  background: var(--key-black);
+  color: #c0b8a0;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.3),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.key-btn:active,
+.key-btn.highlight {
+  transform: translateY(1px);
+}
+
+.key-btn.white-key:active,
+.key-btn.white-key.highlight {
+  background: var(--key-white-active);
+}
+
+.key-btn.black-key:active,
+.key-btn.black-key.highlight {
+  background: #3a3228;
+}
+
+.key-name {
+  font-size: 7px;
+  pointer-events: none;
+}
+
+.time-mode-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.edit-toggles {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ─── Step buttons ──────────────────────────────── */
+
+.step-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.step-buttons {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+}
+
+.step-btn {
+  flex: 1;
+  min-height: 48px;
+  min-width: 0;
+  background: var(--step-bg);
+  border: 1px solid var(--step-border);
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px;
+  position: relative;
+  outline: none;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  transition: background 0.1s, box-shadow 0.1s;
+}
+
+.step-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.step-btn.selected {
+  border-color: #4a90d9;
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.4);
+}
+
+.step-btn.playing {
+  background: linear-gradient(180deg, #e8dcc8 0%, #d8ccb0 100%);
+  border-color: var(--text-red);
+  box-shadow: 0 0 0 1px var(--text-red), inset 0 0 8px rgba(255, 32, 32, 0.08);
+}
+
+.step-btn.gate-on {
+  background: linear-gradient(180deg, #d0c4a8 0%, #b8a888 100%);
+}
+
+.step-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--led-off);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: background 0.1s, box-shadow 0.15s;
+}
+
+.step-led.lit {
+  background: var(--led-on);
+  box-shadow: var(--led-glow);
+}
+
+.step-led.accent {
+  background: #ff4040;
+  box-shadow: 0 0 8px 3px rgba(255, 64, 64, 0.8);
+}
+
+.step-note-label {
+  font-size: 7px;
+  font-weight: 700;
+  color: var(--text-dark);
+  min-height: 10px;
+}
+
+.step-num {
+  font-size: 7px;
+  color: var(--text-muted);
+}
+
+.step-btn.slide-on::after {
+  content: '';
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 2px;
+  background: #4a90d9;
+  border-radius: 1px;
+}
+
+.step-extra {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+
+/* ─── Transport row ─────────────────────────────── */
+
+.transport-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0 4px;
+}
+
+.transport-left {
+  flex-shrink: 0;
+}
+
+.transport-btn {
+  background: var(--btn-bg);
+  border: 1px solid var(--step-border);
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dark);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background 0.1s;
+}
+
+.transport-btn:active {
+  background: var(--btn-active);
+  transform: translateY(1px);
+}
+
+.transport-btn .led {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--led-off);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.transport-btn .led.on {
+  background: var(--led-on);
+  box-shadow: var(--led-glow);
+}
+
+.pattern-select {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.pattern-btns {
+  display: flex;
+  gap: 3px;
+}
+
+.pat-btn {
+  width: 36px;
+  height: 28px;
+  background: var(--step-bg);
+  border: 1px solid var(--step-border);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dark);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: background 0.1s;
+}
+
+.pat-btn:active {
+  transform: translateY(1px);
+}
+
+.pat-btn.selected {
+  background: linear-gradient(180deg, #a89070 0%, #8a7860 100%);
+  color: #f0e8d8;
+  border-color: #6a5840;
+}
+
+.transport-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.octave-select {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.oct-display {
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ─── Small buttons ─────────────────────────────── */
+
+.small-btn {
+  background: var(--btn-bg);
+  border: 1px solid var(--step-border);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  color: var(--text-dark);
+  white-space: nowrap;
+  min-width: 32px;
+  min-height: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+}
+
+.small-btn:active {
+  background: var(--btn-active);
+  transform: translateY(1px);
+}
+
+.small-label {
+  font-size: 6px;
+  color: var(--text-muted);
+}
+
+.toggle-btn.active {
+  background: linear-gradient(180deg, #8a7050 0%, #6a5840 100%);
+  color: #f0e8d8;
+  border-color: #5a4830;
+}
+
+/* ─── FX section ────────────────────────────────── */
+
+.fx-section {
+  border-top: 2px solid var(--section-line);
+}
+
+.fx-toggle-btn {
+  display: block;
+  width: 100%;
+  background: var(--fx-bg);
+  color: var(--fx-text);
+  border: none;
+  padding: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.fx-toggle-btn:hover {
+  background: #4a4238;
+}
+
+.fx-panel {
+  display: none;
+  background: var(--fx-bg);
+  padding: 12px 20px;
+  gap: 24px;
+  justify-content: center;
+}
+
+.fx-panel.open {
+  display: flex;
+}
+
+.fx-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.fx-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--fx-text);
+  letter-spacing: 1px;
+}
+
+.fx-sub-label {
+  font-size: 7px;
+  color: #8a7a62;
+}
+
+.fx-group .knob-small .knob-body {
+  background: radial-gradient(circle at 40% 35%, #6a6050, #4a4038 60%, #3a3028 90%);
+}
+
+.fx-group .knob-small .knob-indicator {
+  background: var(--fx-text);
+}
+
+/* ─── Utility bar ───────────────────────────────── */
+
+.utility-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--panel-bg-dark);
+  border-top: 1px solid var(--section-line);
+  border-radius: 0 0 8px 8px;
+}
+
+.util-btn {
+  background: var(--btn-bg);
+  border: 1px solid var(--step-border);
+  border-radius: 3px;
+  padding: 4px 10px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  color: var(--text-dark);
+}
+
+.util-btn:active {
+  background: var(--btn-active);
+}
+
+.midi-status {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════ */
+
+@media (max-width: 700px) {
+  body {
+    padding: 4px;
+  }
+
+  .tb303-panel {
+    border-radius: 4px;
+    overflow-x: hidden;
+  }
+
+  .top-strip {
+    flex-wrap: wrap;
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .top-left,
+  .top-right {
+    display: none;
+  }
+
+  .knob-strip {
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .knob-widget {
+    width: 40px;
+    height: 40px;
+  }
+
+  .brand-bar {
+    padding: 2px 12px 4px;
+  }
+
+  .roland-logo {
+    font-size: 16px;
+  }
+
+  .bass-line-text {
+    font-size: 18px;
+  }
+
+  .middle-section {
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .tempo-area,
+  .volume-area {
+    flex: 0 0 auto;
+  }
+
+  .title-area {
+    flex: 1 1 100%;
+    order: -1;
+  }
+
+  .knob-large {
+    width: 52px;
+    height: 52px;
+  }
+
+  .knob-large .knob-indicator {
+    height: 14px;
+  }
+
+  .title-main {
+    font-size: 24px;
+  }
+
+  .title-sub {
+    font-size: 10px;
+  }
+
+  .mode-area {
+    display: none;
+  }
+
+  .power-label {
+    display: none;
+  }
+
+  .bottom-section {
+    padding: 6px 6px;
+  }
+
+  .keyboard-row {
+    flex-wrap: wrap;
+  }
+
+  .row-label {
+    min-width: 40px;
+    order: 0;
+  }
+
+  .keyboard {
+    order: 1;
+    flex-basis: calc(100% - 44px);
+    gap: 1px;
+  }
+
+  .time-mode-area {
+    order: 2;
+    min-width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    padding: 4px 0;
+    gap: 3px;
+  }
+
+  .time-mode-area .section-label {
+    display: none;
+  }
+
+  .key-btn {
+    min-height: 44px;
+  }
+
+  .step-row {
+    flex-wrap: wrap;
+  }
+
+  .step-row .row-label {
+    order: 2;
+    flex-direction: row;
+    min-width: auto;
+    width: 100%;
+    justify-content: flex-start;
+    padding: 2px 0;
+  }
+
+  .step-buttons {
+    gap: 2px;
+    order: 1;
+    flex-basis: 100%;
+  }
+
+  .step-btn {
+    min-height: 44px;
+  }
+
+  .step-extra {
+    display: none;
+  }
+
+  .transport-row {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .pattern-select {
+    flex-basis: 100%;
+    order: -1;
+  }
+
+  .pattern-btns {
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: center;
+  }
+
+  .pat-btn {
+    width: 36px;
+    height: 28px;
+    font-size: 10px;
+  }
+
+  .transport-right {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .fx-panel {
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 8px 12px;
+  }
+
+  .utility-bar {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .knob-strip {
+    gap: 2px;
+  }
+
+  .knob-col {
+    flex: 0 0 auto;
+  }
+
+  .knob-widget {
+    width: 38px;
+    height: 38px;
+  }
+
+  .knob-indicator {
+    height: 10px !important;
+    top: 2px !important;
+  }
+
+  .knob-label {
+    font-size: 6px;
+  }
+
+  .middle-section {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .knob-large {
+    width: 44px;
+    height: 44px;
+  }
+
+  .title-main {
+    font-size: 20px;
+    letter-spacing: 2px;
+  }
+
+  .keyboard {
+    gap: 1px;
+  }
+
+  .key-btn {
+    min-height: 40px;
+    padding: 2px 0;
+  }
+
+  .key-name {
+    font-size: 6px;
+  }
+
+  .step-btn {
+    min-height: 40px;
+    padding: 3px 1px;
+  }
+
+  .step-note-label {
+    font-size: 6px;
+  }
+
+  .step-num {
+    font-size: 6px;
+  }
+
+  .edit-toggles {
+    gap: 2px;
+  }
+
+  .small-btn {
+    padding: 3px 5px;
+    font-size: 7px;
+    min-width: 28px;
+    min-height: 24px;
+  }
+
+  .tempo-labels,
+  .volume-labels {
+    display: none;
+  }
+
+  .bpm-display {
+    font-size: 12px;
+  }
+}

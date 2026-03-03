@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TB-303 Bass Line</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="tb303" class="tb303-panel">
+
+    <!-- ═══ TOP STRIP: jacks + knobs ═══ -->
+    <header class="top-strip">
+      <div class="top-left">
+        <span class="jack-label">▲<br>MIX IN</span>
+        <div class="waveform-area">
+          <span class="wf-icons">
+            <span class="wf-saw" title="Sawtooth">⊿</span>
+            <span class="wf-sq" title="Square">⊓</span>
+          </span>
+          <div id="waveform-switch" data-label="Waveform"></div>
+          <span class="jack-label">▲<br>WAVEFORM</span>
+        </div>
+        <span class="jack-label">▲<br>SYNC IN</span>
+      </div>
+
+      <div class="knob-strip">
+        <div class="knob-col">
+          <span class="knob-label">TUNING</span>
+          <div id="knob-tuning" data-min="-1200" data-max="1200" data-default="0"></div>
+        </div>
+        <div class="knob-col">
+          <span class="knob-label">CUT OFF FREQ</span>
+          <div id="knob-cutoff" data-min="60" data-max="22000" data-default="400" data-log="1"></div>
+        </div>
+        <div class="knob-col">
+          <span class="knob-label">RESONANCE</span>
+          <div id="knob-resonance" data-min="0" data-max="1" data-default="0.5"></div>
+        </div>
+        <div class="knob-col">
+          <span class="knob-label">ENV MOD</span>
+          <div id="knob-envmod" data-min="0" data-max="1" data-default="0.5"></div>
+        </div>
+        <div class="knob-col">
+          <span class="knob-label">DECAY</span>
+          <div id="knob-decay" data-min="0" data-max="1" data-default="0.3"></div>
+        </div>
+        <div class="knob-col">
+          <span class="knob-label">ACCENT</span>
+          <div id="knob-accent" data-min="0" data-max="1" data-default="0.5"></div>
+        </div>
+      </div>
+
+      <div class="top-right">
+        <span class="jack-label-sm">CV</span>
+        <span class="jack-label-sm">GATE</span>
+        <span class="jack-label-sm">HEADPHONE</span>
+        <span class="jack-label-sm">OUTPUT</span>
+        <span class="jack-label-sm">DC 9V</span>
+      </div>
+    </header>
+
+    <!-- Brand bar -->
+    <div class="brand-bar">
+      <span class="roland-logo">Roland</span>
+      <span class="bass-line-text">Bass Line</span>
+    </div>
+
+    <!-- ═══ MIDDLE SECTION: tempo, mode, title, volume ═══ -->
+    <section class="middle-section">
+      <div class="tempo-area">
+        <span class="section-label">TEMPO</span>
+        <div id="knob-tempo" data-min="60" data-max="300" data-default="130" class="knob-large"></div>
+        <div class="tempo-labels"><span>SLOW</span><span>FAST</span></div>
+        <div class="bpm-display" id="bpm-display">130</div>
+      </div>
+
+      <div class="mode-area">
+        <div class="mode-row">
+          <div class="patt-group">
+            <span class="section-label red">TRACK</span>
+            <span class="section-label">PATT.GROUP</span>
+          </div>
+        </div>
+        <div class="mode-switch-area">
+          <span class="section-label">MODE</span>
+          <div class="mode-labels">
+            <span>WRITE</span>
+            <span>PLAY</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="title-area">
+        <div class="title-main">TB-303</div>
+        <div class="title-sub">Computer Controlled</div>
+        <div class="power-label">POWER SW OFF /</div>
+      </div>
+
+      <div class="volume-area">
+        <span class="section-label">VOLUME</span>
+        <div id="knob-volume" data-min="0" data-max="1" data-default="0.5" class="knob-large"></div>
+        <div class="volume-labels"><span></span><span>MAX</span></div>
+      </div>
+    </section>
+
+    <!-- ═══ BOTTOM SECTION: keyboard, steps, transport ═══ -->
+    <section class="bottom-section">
+
+      <!-- Keyboard row -->
+      <div class="keyboard-row">
+        <div class="row-label">
+          <span class="section-label">PITCH MODE</span>
+        </div>
+        <div class="keyboard" id="keyboard">
+          <!-- 13 keys: C C# D D# E F F# G G# A A# B C -->
+          <button class="key-btn white-key" data-note="0"><span class="key-name">C</span></button>
+          <button class="key-btn black-key" data-note="1"><span class="key-name">C#</span></button>
+          <button class="key-btn white-key" data-note="2"><span class="key-name">D</span></button>
+          <button class="key-btn black-key" data-note="3"><span class="key-name">D#</span></button>
+          <button class="key-btn white-key" data-note="4"><span class="key-name">E</span></button>
+          <button class="key-btn white-key" data-note="5"><span class="key-name">F</span></button>
+          <button class="key-btn black-key" data-note="6"><span class="key-name">F#</span></button>
+          <button class="key-btn white-key" data-note="7"><span class="key-name">G</span></button>
+          <button class="key-btn black-key" data-note="8"><span class="key-name">G#</span></button>
+          <button class="key-btn white-key" data-note="9"><span class="key-name">A</span></button>
+          <button class="key-btn black-key" data-note="10"><span class="key-name">A#</span></button>
+          <button class="key-btn white-key" data-note="11"><span class="key-name">B</span></button>
+          <button class="key-btn white-key" data-note="12"><span class="key-name">C</span></button>
+        </div>
+        <div class="time-mode-area">
+          <span class="section-label">TIME MODE</span>
+          <div class="edit-toggles">
+            <button id="btn-transpose-down" class="small-btn" aria-label="Transpose down">
+              <span class="small-label">TRANSPOSE</span>DOWN
+            </button>
+            <button id="btn-transpose-up" class="small-btn" aria-label="Transpose up">UP</button>
+            <button id="btn-accent-toggle" class="small-btn toggle-btn" aria-label="Toggle accent">ACCENT</button>
+            <button id="btn-slide-toggle" class="small-btn toggle-btn" aria-label="Toggle slide">SLIDE</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step buttons row -->
+      <div class="step-row">
+        <div class="row-label">
+          <span class="section-label fn-label">FUNCTION</span>
+          <button id="btn-clear" class="small-btn" aria-label="Clear pattern">CLEAR</button>
+        </div>
+        <div class="step-buttons" id="step-buttons">
+          <!-- 16 steps generated by JS -->
+        </div>
+        <div class="step-extra">
+          <span class="section-label">STEP</span>
+        </div>
+      </div>
+
+      <!-- Transport + pattern row -->
+      <div class="transport-row">
+        <div class="transport-left">
+          <button id="btn-run-stop" class="transport-btn" aria-label="Start or stop playback">
+            <span class="led" id="led-run"></span>
+            RUN / STOP
+          </button>
+        </div>
+        <div class="pattern-select" id="pattern-select">
+          <span class="section-label red">PATTERN</span>
+          <div class="pattern-btns">
+            <!-- 8 pattern buttons -->
+            <button class="pat-btn selected" data-pat="0">1</button>
+            <button class="pat-btn" data-pat="1">2</button>
+            <button class="pat-btn" data-pat="2">3</button>
+            <button class="pat-btn" data-pat="3">4</button>
+            <button class="pat-btn" data-pat="4">5</button>
+            <button class="pat-btn" data-pat="5">6</button>
+            <button class="pat-btn" data-pat="6">7</button>
+            <button class="pat-btn" data-pat="7">8</button>
+          </div>
+        </div>
+        <div class="transport-right">
+          <button id="btn-randomize" class="small-btn" aria-label="Randomize pattern">RANDOM</button>
+          <div class="octave-select">
+            <span class="section-label">OCTAVE</span>
+            <button id="btn-oct-down" class="small-btn" aria-label="Octave down">-</button>
+            <span id="octave-display" class="oct-display">2</span>
+            <button id="btn-oct-up" class="small-btn" aria-label="Octave up">+</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ FX SECTION (expandable) ═══ -->
+    <section class="fx-section" id="fx-section">
+      <button id="btn-fx-toggle" class="fx-toggle-btn" aria-label="Toggle effects panel">FX</button>
+      <div class="fx-panel" id="fx-panel">
+        <div class="fx-group">
+          <span class="fx-label">DISTORTION</span>
+          <div id="knob-dist-drive" data-min="0" data-max="1" data-default="0" class="knob-small"></div>
+          <span class="fx-sub-label">DRIVE</span>
+        </div>
+        <div class="fx-group">
+          <span class="fx-label">DELAY</span>
+          <div id="knob-delay-time" data-min="0.05" data-max="0.8" data-default="0.3" class="knob-small"></div>
+          <span class="fx-sub-label">TIME</span>
+          <div id="knob-delay-feedback" data-min="0" data-max="0.9" data-default="0.3" class="knob-small"></div>
+          <span class="fx-sub-label">FEEDBACK</span>
+          <div id="knob-delay-mix" data-min="0" data-max="1" data-default="0" class="knob-small"></div>
+          <span class="fx-sub-label">MIX</span>
+        </div>
+        <div class="fx-group">
+          <span class="fx-label">REVERB</span>
+          <div id="knob-reverb-mix" data-min="0" data-max="1" data-default="0" class="knob-small"></div>
+          <span class="fx-sub-label">MIX</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ UTILITY BAR ═══ -->
+    <div class="utility-bar">
+      <button id="btn-export" class="util-btn" aria-label="Export patterns">EXPORT</button>
+      <label class="util-btn" aria-label="Import patterns">
+        IMPORT <input type="file" id="file-import" accept=".json" hidden>
+      </label>
+      <span class="midi-status" id="midi-status">MIDI: --</span>
+      <button id="btn-swing" class="util-btn" aria-label="Toggle swing">SWING: OFF</button>
+    </div>
+  </div>
+
+  <!-- Power-on overlay (required for audio context user gesture) -->
+  <div id="power-overlay" class="power-overlay">
+    <div class="power-content">
+      <div class="power-title">TB-303</div>
+      <div class="power-sub">Bass Line Synthesizer</div>
+      <button id="btn-power-on" class="power-btn">POWER ON</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
