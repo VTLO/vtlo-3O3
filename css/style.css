@@ -4,28 +4,28 @@
    ═══════════════════════════════════════════════════════ */
 
 :root {
-  --panel-bg: #c9b898;
-  --panel-bg-light: #d4c8a8;
-  --panel-bg-dark: #b8a480;
-  --panel-border: #a08860;
-  --text-dark: #2a2218;
-  --text-red: #c0382b;
-  --text-muted: #7a6a52;
-  --knob-bg: radial-gradient(circle at 40% 35%, #e8e0d4, #c8bcac 40%, #a89880 80%);
-  --knob-large-bg: radial-gradient(circle at 38% 32%, #ddd5c8, #b8a898 50%, #988878 90%);
-  --key-white: #d8d0c0;
-  --key-black: #2a2218;
-  --key-white-active: #f0ece4;
-  --led-off: #5a3030;
-  --led-on: #ff2020;
-  --led-glow: 0 0 6px 2px rgba(255, 32, 32, 0.7);
-  --step-bg: linear-gradient(180deg, #d8d0c0 0%, #c0b498 100%);
-  --step-border: #a09078;
-  --btn-bg: #b8a88c;
-  --btn-active: #a89878;
-  --section-line: #a89878;
-  --fx-bg: #3a3228;
-  --fx-text: #c9b898;
+  --panel-bg: #cac4ba;
+  --panel-bg-light: #d4cec4;
+  --panel-bg-dark: #bab4aa;
+  --panel-border: #9a9488;
+  --text-dark: #1a1a1a;
+  --text-red: #c02020;
+  --text-muted: #6a6458;
+  --knob-bg: radial-gradient(circle at 40% 35%, #d8d2c8, #b8b2a8 40%, #9a948a 80%);
+  --knob-large-bg: radial-gradient(circle at 38% 32%, #5a5650, #3a3834 50%, #2a2826 90%);
+  --key-white: #eae6e0;
+  --key-black: #1a1816;
+  --key-white-active: #f4f0ec;
+  --led-off: #5a2a2a;
+  --led-on: #ff1a1a;
+  --led-glow: 0 0 6px 2px rgba(255, 26, 26, 0.8);
+  --step-bg: linear-gradient(180deg, #d4cec4 0%, #c4beb4 100%);
+  --step-border: #a09a90;
+  --btn-bg: #c0bab0;
+  --btn-active: #b0aaa0;
+  --section-line: #a8a298;
+  --fx-bg: #2a2826;
+  --fx-text: #cac4ba;
 }
 
 *,
@@ -42,9 +42,9 @@ html, body {
 }
 
 body {
-  background: #1a1612;
+  background: #1a1816;
   color: var(--text-dark);
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Helvetica Neue", Helvetica, "Arial Narrow", Arial, sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -61,7 +61,7 @@ body {
 .power-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 8, 6, 0.92);
+  background: rgba(12, 12, 10, 0.92);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -80,33 +80,37 @@ body {
 }
 
 .power-title {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 64px;
   font-weight: 700;
   letter-spacing: 6px;
+  color: #d0cac2;
 }
 
 .power-sub {
+  font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 18px;
   font-style: italic;
   margin-bottom: 32px;
-  color: var(--text-muted);
+  color: #8a847a;
 }
 
 .power-btn {
-  background: var(--panel-bg);
+  background: linear-gradient(180deg, #d4cec4 0%, #c0bab0 100%);
   color: var(--text-dark);
-  border: none;
+  border: 1px solid #a09a90;
   padding: 16px 48px;
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 3px;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 3px;
   transition: background 0.2s;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
 .power-btn:hover {
-  background: var(--panel-bg-light);
+  background: linear-gradient(180deg, #e0dad0 0%, #cac4ba 100%);
 }
 
 /* ─── Main panel ────────────────────────────────── */
@@ -115,11 +119,12 @@ body {
   width: 100%;
   max-width: 940px;
   background: var(--panel-bg);
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    0 6px 30px rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.15);
   overflow: hidden;
   position: relative;
 }
@@ -133,6 +138,17 @@ body {
   padding: 10px 16px 8px;
   background: linear-gradient(180deg, var(--panel-bg-light) 0%, var(--panel-bg) 100%);
   border-bottom: 1px solid var(--section-line);
+  position: relative;
+}
+
+.top-strip::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .top-left {
@@ -187,11 +203,12 @@ body {
 .knob-label {
   font-size: 8px;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   color: var(--text-dark);
   text-align: center;
   white-space: nowrap;
+  font-family: "Helvetica Neue", Helvetica, "Arial Narrow", Arial, sans-serif;
 }
 
 .top-right {
@@ -207,24 +224,38 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2px 20px 6px;
+  padding: 4px 20px 8px;
   border-bottom: 2px solid var(--section-line);
+  position: relative;
+}
+
+.brand-bar::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .roland-logo {
-  font-size: 22px;
-  font-weight: 800;
-  font-style: italic;
-  color: var(--text-dark);
-  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+}
+
+.roland-svg {
+  width: 140px;
+  height: 28px;
 }
 
 .bass-line-text {
-  font-size: 24px;
+  font-family: 'Georgia', 'Times New Roman', 'Palatino', serif;
+  font-size: 26px;
   font-style: italic;
-  font-weight: 300;
+  font-weight: 400;
   color: var(--text-dark);
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
 }
 
 /* ─── Knob widget ───────────────────────────────── */
@@ -249,9 +280,12 @@ body {
   height: 100%;
   border-radius: 50%;
   background: var(--knob-bg);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    0 3px 6px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.12);
   position: relative;
   transition: box-shadow 0.1s;
 }
@@ -264,29 +298,37 @@ body {
 
 .knob-indicator {
   position: absolute;
-  top: 3px;
+  top: 4px;
   left: 50%;
   width: 2px;
-  height: 12px;
-  background: var(--text-dark);
+  height: 11px;
+  background: #2a2826;
   border-radius: 1px;
   transform: translateX(-50%);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
 }
 
 /* Large knobs (tempo, volume) */
 .knob-large {
-  width: 64px;
-  height: 64px;
+  width: 68px;
+  height: 68px;
 }
 
 .knob-large .knob-body {
   background: var(--knob-large-bg);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
 }
 
 .knob-large .knob-indicator {
-  height: 18px;
-  top: 4px;
+  height: 20px;
+  top: 5px;
   width: 3px;
+  background: #d8d4cc;
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
 }
 
 /* Small knobs (FX) */
@@ -303,25 +345,25 @@ body {
 /* ─── Toggle switch ─────────────────────────────── */
 
 .toggle-switch {
-  width: 32px;
-  height: 18px;
-  background: #4a4030;
+  width: 34px;
+  height: 20px;
+  background: #3a3836;
   border-radius: 3px;
   position: relative;
   cursor: pointer;
   outline: none;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 0 1px rgba(0, 0, 0, 0.3);
 }
 
 .switch-lever {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 12px;
-  height: 14px;
-  background: linear-gradient(180deg, #e0d8cc, #c0b8a8);
+  width: 14px;
+  height: 16px;
+  background: linear-gradient(180deg, #d0ccc4, #a8a49c);
   border-radius: 2px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   transition: transform 0.15s;
 }
 
@@ -334,9 +376,20 @@ body {
 .middle-section {
   display: flex;
   align-items: center;
-  padding: 12px 20px;
+  padding: 14px 20px;
   gap: 16px;
   border-bottom: 2px solid var(--section-line);
+  position: relative;
+}
+
+.middle-section::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .tempo-area,
@@ -358,6 +411,7 @@ body {
 }
 
 .bpm-display {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 14px;
   font-weight: 700;
   color: var(--text-dark);
@@ -404,15 +458,18 @@ body {
 }
 
 .title-main {
-  font-size: 32px;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 34px;
   font-weight: 800;
   letter-spacing: 3px;
   color: var(--text-dark);
 }
 
 .title-sub {
-  font-size: 12px;
-  letter-spacing: 2px;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 2.5px;
   color: var(--text-muted);
   margin-top: -2px;
 }
@@ -424,9 +481,10 @@ body {
 }
 
 .section-label {
+  font-family: "Helvetica Neue", Helvetica, "Arial Narrow", Arial, sans-serif;
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.8px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text-dark);
 }
@@ -438,9 +496,18 @@ body {
 /* ─── Bottom section ────────────────────────────── */
 
 .bottom-section {
-  padding: 8px 12px;
-  background: linear-gradient(180deg, var(--panel-bg) 0%, var(--panel-bg-dark) 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 14px 8px;
+  background: linear-gradient(180deg, #c6c0b6 0%, #cac4ba 4%, var(--panel-bg) 100%);
+  border-top: 1px solid #a09a90;
+  border-left: 1px solid #b0aaa0;
+  border-right: 1px solid #b0aaa0;
+  border-bottom: 1px solid #b0aaa0;
+  border-radius: 0;
+  margin: 0 8px 0;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 /* Keyboard row */
@@ -472,7 +539,7 @@ body {
 
 .key-btn {
   flex: 1;
-  min-height: 48px;
+  min-height: 52px;
   min-width: 0;
   border: none;
   cursor: pointer;
@@ -481,29 +548,34 @@ body {
   align-items: center;
   justify-content: flex-end;
   padding: 4px 1px;
-  border-radius: 3px;
+  border-radius: 2px;
   font-size: 8px;
   font-weight: 600;
-  transition: background 0.1s;
+  transition: background 0.1s, transform 0.05s;
   position: relative;
   outline: none;
 }
 
 .key-btn.white-key {
-  background: var(--key-white);
+  background: linear-gradient(180deg, #f0ece6 0%, #e0dcd4 50%, #d6d0c8 100%);
   color: var(--text-dark);
+  border: 1px solid #b0aaa0;
   box-shadow:
-    0 2px 3px rgba(0, 0, 0, 0.2),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    0 3px 5px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.06);
 }
 
 .key-btn.black-key {
-  background: var(--key-black);
-  color: #c0b8a0;
+  background: linear-gradient(180deg, #2a2826 0%, #1a1816 50%, #0e0e0c 100%);
+  color: #a09a90;
+  border: 1px solid #0a0a08;
   box-shadow:
-    0 2px 3px rgba(0, 0, 0, 0.3),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    0 3px 5px rgba(0, 0, 0, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
 }
 
 .key-btn:active,
@@ -513,12 +585,14 @@ body {
 
 .key-btn.white-key:active,
 .key-btn.white-key.highlight {
-  background: var(--key-white-active);
+  background: linear-gradient(180deg, #f4f0ea 0%, #eae6de 50%, #e0dcd4 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .key-btn.black-key:active,
 .key-btn.black-key.highlight {
-  background: #3a3228;
+  background: linear-gradient(180deg, #3a3836 0%, #2a2826 50%, #1a1816 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .key-name {
@@ -560,9 +634,9 @@ body {
   flex: 1;
   min-height: 48px;
   min-width: 0;
-  background: var(--step-bg);
-  border: 1px solid var(--step-border);
-  border-radius: 3px;
+  background: linear-gradient(180deg, #d8d2c8 0%, #c8c2b8 50%, #beb8ae 100%);
+  border: 1px solid #a09a90;
+  border-radius: 2px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -572,9 +646,10 @@ body {
   position: relative;
   outline: none;
   box-shadow:
-    0 2px 3px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 1px 1px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
   transition: background 0.1s, box-shadow 0.1s;
 }
 
@@ -584,26 +659,26 @@ body {
 }
 
 .step-btn.selected {
-  border-color: #4a90d9;
-  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.4);
+  border-color: #5a8ac0;
+  box-shadow: 0 0 0 2px rgba(90, 138, 192, 0.45), 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .step-btn.playing {
-  background: linear-gradient(180deg, #e8dcc8 0%, #d8ccb0 100%);
+  background: linear-gradient(180deg, #e0d8cc 0%, #d0c8bc 100%);
   border-color: var(--text-red);
-  box-shadow: 0 0 0 1px var(--text-red), inset 0 0 8px rgba(255, 32, 32, 0.08);
+  box-shadow: 0 0 0 1px var(--text-red), inset 0 0 8px rgba(255, 26, 26, 0.06);
 }
 
 .step-btn.gate-on {
-  background: linear-gradient(180deg, #d0c4a8 0%, #b8a888 100%);
+  background: linear-gradient(180deg, #cec8be 0%, #b8b2a8 100%);
 }
 
 .step-led {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--led-off);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.4);
   transition: background 0.1s, box-shadow 0.15s;
 }
 
@@ -613,8 +688,8 @@ body {
 }
 
 .step-led.accent {
-  background: #ff4040;
-  box-shadow: 0 0 8px 3px rgba(255, 64, 64, 0.8);
+  background: #ff2020;
+  box-shadow: 0 0 8px 3px rgba(255, 32, 32, 0.8);
 }
 
 .step-note-label {
@@ -663,9 +738,9 @@ body {
 }
 
 .transport-btn {
-  background: var(--btn-bg);
-  border: 1px solid var(--step-border);
-  border-radius: 4px;
+  background: linear-gradient(180deg, #c8c2b8 0%, #b0aaa0 100%);
+  border: 1px solid #908a80;
+  border-radius: 3px;
   padding: 8px 16px;
   font-size: 11px;
   font-weight: 700;
@@ -675,13 +750,17 @@ body {
   align-items: center;
   gap: 8px;
   color: var(--text-dark);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
   transition: background 0.1s;
 }
 
 .transport-btn:active {
-  background: var(--btn-active);
+  background: linear-gradient(180deg, #b8b2a8 0%, #a09a90 100%);
   transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .transport-btn .led {
@@ -714,14 +793,14 @@ body {
 .pat-btn {
   width: 36px;
   height: 28px;
-  background: var(--step-bg);
-  border: 1px solid var(--step-border);
-  border-radius: 3px;
+  background: linear-gradient(180deg, #d4cec4 0%, #c0bab0 100%);
+  border: 1px solid #a09a90;
+  border-radius: 2px;
   cursor: pointer;
   font-size: 11px;
   font-weight: 700;
   color: var(--text-dark);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   transition: background 0.1s;
 }
 
@@ -730,9 +809,10 @@ body {
 }
 
 .pat-btn.selected {
-  background: linear-gradient(180deg, #a89070 0%, #8a7860 100%);
-  color: #f0e8d8;
-  border-color: #6a5840;
+  background: linear-gradient(180deg, #908880 0%, #787068 100%);
+  color: #f0ece6;
+  border-color: #605850;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .transport-right {
@@ -758,9 +838,9 @@ body {
 /* ─── Small buttons ─────────────────────────────── */
 
 .small-btn {
-  background: var(--btn-bg);
-  border: 1px solid var(--step-border);
-  border-radius: 3px;
+  background: linear-gradient(180deg, #c8c2b8 0%, #b4aea4 100%);
+  border: 1px solid #908a80;
+  border-radius: 2px;
   padding: 4px 8px;
   font-size: 8px;
   font-weight: 700;
@@ -775,11 +855,16 @@ body {
   align-items: center;
   justify-content: center;
   transition: background 0.1s;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.06);
 }
 
 .small-btn:active {
-  background: var(--btn-active);
+  background: linear-gradient(180deg, #b4aea4 0%, #a09a90 100%);
   transform: translateY(1px);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .small-label {
@@ -788,15 +873,16 @@ body {
 }
 
 .toggle-btn.active {
-  background: linear-gradient(180deg, #8a7050 0%, #6a5840 100%);
-  color: #f0e8d8;
-  border-color: #5a4830;
+  background: linear-gradient(180deg, #787068 0%, #605850 100%);
+  color: #f0ece6;
+  border-color: #504840;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* ─── FX section ────────────────────────────────── */
 
 .fx-section {
-  border-top: 2px solid var(--section-line);
+  border-top: 1px solid var(--section-line);
 }
 
 .fx-toggle-btn {
@@ -814,7 +900,7 @@ body {
 }
 
 .fx-toggle-btn:hover {
-  background: #4a4238;
+  background: #3a3634;
 }
 
 .fx-panel {
@@ -845,15 +931,16 @@ body {
 
 .fx-sub-label {
   font-size: 7px;
-  color: #8a7a62;
+  color: #8a847a;
 }
 
 .fx-group .knob-small .knob-body {
-  background: radial-gradient(circle at 40% 35%, #6a6050, #4a4038 60%, #3a3028 90%);
+  background: radial-gradient(circle at 40% 35%, #5a5850, #3a3836 60%, #2a2826 90%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .fx-group .knob-small .knob-indicator {
-  background: var(--fx-text);
+  background: #cac4ba;
 }
 
 /* ─── Utility bar ───────────────────────────────── */
@@ -865,23 +952,24 @@ body {
   padding: 6px 16px;
   background: var(--panel-bg-dark);
   border-top: 1px solid var(--section-line);
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 6px 6px;
 }
 
 .util-btn {
-  background: var(--btn-bg);
-  border: 1px solid var(--step-border);
-  border-radius: 3px;
+  background: linear-gradient(180deg, #c8c2b8 0%, #b4aea4 100%);
+  border: 1px solid #908a80;
+  border-radius: 2px;
   padding: 4px 10px;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.5px;
   cursor: pointer;
   color: var(--text-dark);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
 .util-btn:active {
-  background: var(--btn-active);
+  background: linear-gradient(180deg, #b4aea4 0%, #a09a90 100%);
 }
 
 .midi-status {
@@ -931,8 +1019,9 @@ body {
     padding: 2px 12px 4px;
   }
 
-  .roland-logo {
-    font-size: 16px;
+  .roland-svg {
+    width: 110px;
+    height: 22px;
   }
 
   .bass-line-text {
@@ -983,6 +1072,7 @@ body {
 
   .bottom-section {
     padding: 6px 6px;
+    margin: 0 4px;
   }
 
   .keyboard-row {
