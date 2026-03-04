@@ -211,7 +211,7 @@ export async function uploadTrack(title, audioBlob, pattern, bpm, onProgress) {
     orig_filename: origFilename || 'pattern.wav',
     duration,
   };
-  if (coverArtCid) trackBody.cover_art_cid = coverArtCid;
+  if (coverArtCid) trackBody.cover_art_sizes = coverArtCid;
 
   const createResp = await fetch(`${API_BASE}/tracks?user_id=${encodeURIComponent(user.userId)}`, {
     method: 'POST',
