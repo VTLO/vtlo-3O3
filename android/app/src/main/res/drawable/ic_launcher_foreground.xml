@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Resonant sawtooth: three saw teeth with a ringing filter peak. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFC6C2BC"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M30,68 L44,40 L44,68 L58,40 L58,68 L72,40 L72,68" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFF1A1A"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M30,78 C48,78 58,77 64,72 C68,68 70,60 72,60 C74,60 75,70 78,78" />
+</vector>
