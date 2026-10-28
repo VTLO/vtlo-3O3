@@ -1,15 +1,12 @@
 package com.vtlo.acid303
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
@@ -66,8 +63,6 @@ class MainActivity : Activity() {
     private lateinit var bpmText: TextView
     private lateinit var lengthKnob: KnobView
 
-    private lateinit var audioManager: AudioManager
-    private lateinit var focusRequest: AudioFocusRequest
     private val mainHandler = Handler(Looper.getMainLooper())
     private val exportExecutor = Executors.newSingleThreadExecutor()
 
@@ -85,30 +80,8 @@ class MainActivity : Activity() {
         }
     }
 
-    private val noisyReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) stopTransport()
-        }
-    }
-
-    private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
-        if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-            mainHandler.post { stopTransport() }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        audioManager = getSystemService(AudioManager::class.java)
-        focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build()
-            )
-            .setOnAudioFocusChangeListener(focusListener, mainHandler)
-            .build()
         volumeControlStream = AudioManager.STREAM_MUSIC
         selectedStep = savedInstanceState?.getInt(STATE_STEP, 0) ?: 0
 
@@ -124,23 +97,17 @@ class MainActivity : Activity() {
 
     override fun onStart() {
         super.onStart()
+        app.transport.uiVisible = true
         app.output.start(engine)
-        val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-        if (Build.VERSION.SDK_INT >= 33) registerReceiver(noisyReceiver, filter, RECEIVER_NOT_EXPORTED)
-        else registerReceiver(noisyReceiver, filter)
         animating = true
         Choreographer.getInstance().postFrameCallback(frameCallback)
     }
 
     override fun onStop() {
         animating = false
-        unregisterReceiver(noisyReceiver)
         app.save()
-        if (!isChangingConfigurations) {
-            // No background playback: stop sound and release the audio device.
-            stopTransport()
-            app.output.stop()
-        }
+        // Playback continues in the foreground service; an idle audio device is released.
+        if (!isChangingConfigurations) app.transport.uiVisible = false
         super.onStop()
     }
 
@@ -344,7 +311,7 @@ class MainActivity : Activity() {
         // Transport + timing
         val transport = FlowGrid(this, dpi(70))
         playButton = PadButton(this, "RUN", hasLed = true).apply {
-            setOnClickListener { if (engine.isPlaying) stopTransport() else startTransport() }
+            setOnClickListener { if (app.transport.playing) stopTransport() else startTransport() }
         }
         transport.addView(FrameLayout(this).apply {
             addView(playButton, FrameLayout.LayoutParams(MATCH_PARENT, dpi(64), Gravity.CENTER))
@@ -434,8 +401,8 @@ class MainActivity : Activity() {
             modifyPattern { restore(c) }
         })
         utils.addView(pad("PANIC") {
-            engine.panic()
-            refreshTransport()
+            app.transport.panic()
+            refreshTransport(false)
         }.also { it.contentDescription = "Stop all sound" })
         utils.addView(pad("EXPORT") { startExport() }.also { it.contentDescription = "Export WAV" })
         panel.addView(spacer(8))
@@ -451,19 +418,27 @@ class MainActivity : Activity() {
     // ─── Actions ─────────────────────────────────────────────
 
     private fun startTransport() {
-        val granted = audioManager.requestAudioFocus(focusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-        if (!granted) {
+        if (!app.transport.start()) {
             toast("Audio is in use by another app")
             return
         }
-        engine.play()
+        requestNotificationPermissionOnce()
         refreshTransport(true)
     }
 
     private fun stopTransport() {
-        engine.stop()
-        audioManager.abandonAudioFocusRequest(focusRequest)
+        app.transport.stop()
         refreshTransport(false)
+    }
+
+    /** The playback notification needs this on Android 13+; playback works without it. */
+    private fun requestNotificationPermissionOnce() {
+        if (Build.VERSION.SDK_INT < 33) return
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        val prefs = app.prefs()
+        if (prefs.getBoolean(KEY_ASKED_NOTIFICATIONS, false)) return
+        prefs.edit().putBoolean(KEY_ASKED_NOTIFICATIONS, true).apply()
+        requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFICATIONS)
     }
 
     private fun selectPattern(p: Int) {
@@ -652,7 +627,7 @@ class MainActivity : Activity() {
         keyboard.highlighted = if (PatternBank.gate(s) && n in 0..12) n else -1
     }
 
-    private fun refreshTransport(playing: Boolean = engine.isPlaying) {
+    private fun refreshTransport(playing: Boolean = app.transport.playing) {
         playButton.active = playing
         playButton.setLabel(if (playing) "STOP" else "RUN")
         lastPlaying = playing
@@ -660,7 +635,7 @@ class MainActivity : Activity() {
     }
 
     private fun updatePlayhead() {
-        val playing = engine.isPlaying
+        val playing = app.transport.playing
         if (playing != lastPlaying) refreshTransport(playing)
         val step = if (playing && engine.playingPattern == pattern) engine.currentStep else -1
         if (step != lastStep) {
@@ -686,5 +661,7 @@ class MainActivity : Activity() {
     private companion object {
         const val STATE_STEP = "step"
         const val REQUEST_EXPORT = 1
+        const val REQUEST_NOTIFICATIONS = 2
+        const val KEY_ASKED_NOTIFICATIONS = "asked_notifications"
     }
 }

@@ -13,7 +13,7 @@ Then open http://localhost:3000
 ## Android app (`android/`)
 
 A standalone, fully offline native Android app (Kotlin, no WebView, no third-party
-libraries, no permissions) targeting **Android 17 (API 37)**, min Android 8.0 (API 26).
+libraries; only foreground-service and notification permissions) targeting **Android 17 (API 37)**, min Android 8.0 (API 26).
 
 **Sound engine**
 - TB-303 voice modelled on Open303's measurements: PolyBLEP saw/square, 44 Hz
@@ -35,7 +35,12 @@ libraries, no permissions) targeting **Android 17 (API 37)**, min Android 8.0 (A
 - WAV export (24-bit, 48 kHz) through the system file picker.
 - Android 17 behaviour: edge-to-edge with inset handling, predictive back,
   no orientation/resizability restrictions (phones, foldables, tablets, desktop
-  windows), audio focus, stops on headphone unplug and when backgrounded.
+  windows), audio focus, stops on headphone unplug.
+- Background playback: a `mediaPlayback` foreground service with a MediaSession
+  keeps the pattern running when you leave the app. Stop it from the
+  notification, lock screen, headset/Bluetooth buttons, or by swiping the app
+  away. The notification permission is requested once on Android 13+;
+  playback works without it.
 - TalkBack: knobs are adjustable sliders; every control is labelled.
 
 **Build**
