@@ -8,26 +8,29 @@ import com.vtlo.acid303.dsp.PatternBank
 import com.vtlo.acid303.dsp.Presets
 
 /**
- * Owns the engine and audio output for the whole process so playback survives
- * configuration changes (rotation, folding, window resizing).
+ * Owns the engine, audio output and transport for the whole process so playback
+ * survives configuration changes and continues in the background.
  */
 class AcidApp : Application() {
     lateinit var output: AudioOutput
         private set
     lateinit var engine: AcidEngine
         private set
+    lateinit var transport: Transport
+        private set
 
     override fun onCreate() {
         super.onCreate()
         output = AudioOutput(this)
         engine = AcidEngine(output.sampleRate)
+        transport = Transport(this)
         if (!restore()) {
             Presets.all.forEachIndexed { i, p -> Presets.load(engine.bank, i, p) }
             engine.set(Param.TEMPO, Param.bpmToNorm(Presets.all[0].bpm.toFloat()))
         }
     }
 
-    private fun prefs() = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    fun prefs() = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     fun save() {
         prefs().edit().apply {
