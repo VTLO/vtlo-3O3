@@ -174,17 +174,19 @@ class StepCell(context: Context, val index: Int) : View(context) {
 
         val cx = width / 2f
         led.color = if (playing) Palette.ledOn else Palette.ledOff
-        canvas.drawCircle(cx, dp(11f), dp(4f), led)
-        canvas.drawText((index + 1).toString(), cx, dp(28f), num)
+        // Rows scale with the cell height so short (landscape) cells stay legible.
+        val h = height.toFloat()
+        canvas.drawCircle(cx, h * 0.15f, min(dp(4f), h * 0.06f), led)
+        num.textSize = min(sp(9f), h * 0.14f)
+        canvas.drawText((index + 1).toString(), cx, h * 0.38f, num)
 
         noteText.color = if (gate) Palette.ink else Palette.inkMuted
-        noteText.textSize = min(sp(13f), width / 3.2f)
-        canvas.drawText(if (gate) noteName(note) else "—", cx, height * 0.62f, noteText)
-        if (gate) {
-            flag.textSize = min(sp(9f), width / 4.5f)
-            val y = height - dp(8f)
-            if (accent) canvas.drawText("ACC", cx, y - flag.textSize - dp(1f), flag)
-            if (slide) canvas.drawText("SLD", cx, y, flag)
+        noteText.textSize = min(min(sp(13f), width / 3.2f), h * 0.22f)
+        canvas.drawText(if (gate) noteName(note) else "—", cx, h * 0.66f, noteText)
+        if (gate && (accent || slide)) {
+            flag.textSize = min(min(sp(9f), width / 5.5f), h * 0.14f)
+            val tag = if (accent && slide) "ACC SLD" else if (accent) "ACC" else "SLD"
+            canvas.drawText(tag, cx, h - dp(5f), flag)
         }
     }
 
@@ -365,4 +367,38 @@ class KeyboardView(context: Context) : View(context) {
     }
 
     override fun performClick(): Boolean = super.performClick()
+}
+
+/**
+ * Lays out its single child at a fixed design width and scales it uniformly
+ * (touch included) so the whole child fits inside this view, centred.
+ */
+@SuppressLint("ViewConstructor")
+class FitScaleLayout(context: Context, private val designWidth: Int) : ViewGroup(context) {
+    private var scale = 1f
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val w = MeasureSpec.getSize(widthMeasureSpec)
+        val h = MeasureSpec.getSize(heightMeasureSpec)
+        val child = getChildAt(0)
+        if (child != null) {
+            child.measure(
+                MeasureSpec.makeMeasureSpec(designWidth, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
+            )
+            scale = min(w / designWidth.toFloat(), h / child.measuredHeight.toFloat().coerceAtLeast(1f))
+        }
+        setMeasuredDimension(w, h)
+    }
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        val child = getChildAt(0) ?: return
+        val left = ((width - child.measuredWidth * scale) / 2f).toInt()
+        val top = ((height - child.measuredHeight * scale) / 2f).toInt()
+        child.layout(left, top, left + child.measuredWidth, top + child.measuredHeight)
+        child.pivotX = 0f
+        child.pivotY = 0f
+        child.scaleX = scale
+        child.scaleY = scale
+    }
 }

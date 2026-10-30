@@ -27,12 +27,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Acid303">
 
+        <!-- Landscape shows every control on one screen. Phones honour this; on large
+             screens Android 16+ ignores it and the activity falls back to its
+             scrolling portrait layout when the window is taller than wide. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:resizeableActivity="true"
-            android:windowSoftInputMode="adjustNothing">
+            android:screenOrientation="sensorLandscape"
+            android:windowSoftInputMode="adjustNothing"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
