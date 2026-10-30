@@ -15,6 +15,7 @@ import android.os.Looper
 import android.view.Choreographer
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.WindowInsets
@@ -29,6 +30,7 @@ import com.vtlo.acid303.dsp.Param
 import com.vtlo.acid303.dsp.PatternBank
 import com.vtlo.acid303.dsp.Presets
 import com.vtlo.acid303.dsp.WavExporter
+import com.vtlo.acid303.ui.FitScaleLayout
 import com.vtlo.acid303.ui.FlowGrid
 import com.vtlo.acid303.ui.KeyboardView
 import com.vtlo.acid303.ui.KnobView
@@ -87,6 +89,7 @@ class MainActivity : Activity() {
 
         setContentView(buildUi())
         enableEdgeToEdge()
+        if (isLandscape()) hideSystemBars()
         refreshAll()
     }
 
@@ -141,6 +144,23 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun isLandscape() = resources.configuration.run { screenWidthDp >= screenHeightDp }
+
+    /** Landscape uses the full screen; bars come back temporarily with a swipe. */
+    private fun hideSystemBars() {
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.insetsController?.apply {
+                hide(WindowInsets.Type.systemBars())
+                systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = window.decorView.systemUiVisibility or
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+        }
+    }
+
     private fun applyInsets(target: View) {
         target.setOnApplyWindowInsetsListener { v, insets ->
             if (Build.VERSION.SDK_INT >= 30) {
@@ -162,14 +182,72 @@ class MainActivity : Activity() {
     private fun buildUi(): View {
         val root = FrameLayout(this).apply { setBackgroundColor(Palette.chassis) }
         applyInsets(root)
+        val content = if (isLandscape()) landscapeUi() else portraitUi()
+        root.addView(content, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+        return root
+    }
 
+    /**
+     * Every control on one screen: laid out at a fixed design width and scaled
+     * uniformly to fit the window, so nothing needs scrolling.
+     */
+    private fun landscapeUi(): View {
+        val fit = FitScaleLayout(this, dpi(LANDSCAPE_DESIGN_WIDTH_DP))
+        val content = column().apply {
+            val pad = dpi(8)
+            setPadding(pad, pad / 2, pad, pad)
+        }
+        fit.addView(content)
+
+        content.addView(header(compact = true).apply {
+            createPlayButton()
+            (this as LinearLayout).addView(playButton, LinearLayout.LayoutParams(dpi(140), dpi(48)).apply {
+                marginStart = dpi(10)
+            })
+        })
+
+        val top = row()
+        val voice = panel("VOICE").apply {
+            addView(FlowGrid(context, dpi(40), allowedColumns = intArrayOf(7)).also(::addVoiceControls))
+        }
+        val fx = panel("EFFECTS · MASTER · TEMPO").apply {
+            addView(FlowGrid(context, dpi(40), allowedColumns = intArrayOf(8)).also { g ->
+                addFxControls(g)
+                addTimingControls(g)
+            })
+        }
+        top.addView(voice, weighted(7f, endMargin = 8))
+        top.addView(fx, weighted(8f))
+        content.addView(top)
+
+        content.addView(panel("SEQUENCER").apply {
+            addView(stepGrid(intArrayOf(16), cellHeight = dpi(64)))
+        })
+
+        val bottom = row()
+        bottom.addView(panel("KEYBOARD").apply {
+            addView(createKeyboard(), LinearLayout.LayoutParams(MATCH_PARENT, dpi(120)))
+        }, weighted(3.4f, endMargin = 8))
+        bottom.addView(panel("STEP").apply {
+            addView(editGrid(intArrayOf(3), cellHeight = dpi(40)))
+        }, weighted(2.6f, endMargin = 8))
+        bottom.addView(panel("PATTERN").apply {
+            addView(patternGrid(intArrayOf(3), cellHeight = dpi(40)))
+        }, weighted(1.9f, endMargin = 8))
+        bottom.addView(panel("UTILITY").apply {
+            addView(utilityGrid(intArrayOf(3), cellHeight = dpi(40)))
+        }, weighted(2.4f))
+        content.addView(bottom)
+        return fit
+    }
+
+    /** Scrolling layout, used when the window is taller than wide (large screens ignore the landscape request). */
+    private fun portraitUi(): View {
         val wide = resources.configuration.screenWidthDp >= 840
         val scroll = ScrollView(this).apply {
             isFillViewport = true
             clipToPadding = false
         }
-        root.addView(scroll, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
-
         val content = LinearLayout(this).apply {
             orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             val pad = dpi(10)
@@ -179,9 +257,9 @@ class MainActivity : Activity() {
 
         val left = column()
         val right = if (wide) column() else left
-        left.addView(header())
-        left.addView(voicePanel())
-        left.addView(fxPanel())
+        left.addView(header(compact = false))
+        left.addView(panel("VOICE").apply { addView(FlowGrid(context, dpi(70)).also(::addVoiceControls)) })
+        left.addView(panel("EFFECTS · MASTER").apply { addView(FlowGrid(context, dpi(70)).also(::addFxControls)) })
         right.addView(sequencerPanel())
 
         if (wide) {
@@ -190,22 +268,30 @@ class MainActivity : Activity() {
         } else {
             content.addView(left, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
         }
-        return root
+        return scroll
     }
 
     private fun column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
-    private fun header(): View {
+    private fun row() = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dpi(8) }
+    }
+
+    private fun weighted(weight: Float, endMargin: Int = 0) =
+        LinearLayout.LayoutParams(0, MATCH_PARENT, weight).apply { marginEnd = dpi(endMargin) }
+
+    private fun header(compact: Boolean): View {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dpi(6), dpi(4), dpi(6), dpi(10))
+            setPadding(dpi(6), dpi(4), dpi(6), dpi(if (compact) 6 else 10))
         }
         val titles = column()
         titles.addView(TextView(this).apply {
             text = getString(R.string.app_name)
             setTextColor(Palette.panelText)
-            textSize = 24f
+            textSize = if (compact) 20f else 24f
             typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
             letterSpacing = 0.12f
         })
@@ -218,10 +304,10 @@ class MainActivity : Activity() {
         row.addView(titles, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
         bpmText = TextView(this).apply {
             setTextColor(Palette.ledOn)
-            textSize = 26f
+            textSize = if (compact) 22f else 26f
             typeface = Typeface.MONOSPACE
             gravity = Gravity.CENTER
-            setPadding(dpi(12), dpi(4), dpi(12), dpi(4))
+            setPadding(dpi(12), dpi(2), dpi(12), dpi(2))
             background = GradientDrawable().apply {
                 setColor(0xFF0E0C0B.toInt()); cornerRadius = dpi(6).toFloat()
                 setStroke(dpi(1), Palette.knobRim)
@@ -266,9 +352,7 @@ class MainActivity : Activity() {
 
     private fun pct(v: Float) = "${(v * 100).roundToInt()}"
 
-    private fun voicePanel(): View {
-        val panel = panel("VOICE")
-        val grid = FlowGrid(this, dpi(70))
+    private fun addVoiceControls(grid: ViewGroup) {
         waveButton = PadButton(this, "SAW", hasLed = true, dark = false).apply {
             setOnClickListener {
                 val sq = engine.get(Param.WAVEFORM) < 0.5f
@@ -276,10 +360,9 @@ class MainActivity : Activity() {
                 refreshWave()
             }
         }
-        val waveCell = FrameLayout(this).apply {
+        grid.addView(FrameLayout(this).apply {
             addView(waveButton, FrameLayout.LayoutParams(MATCH_PARENT, dpi(56), Gravity.CENTER))
-        }
-        grid.addView(waveCell)
+        })
         grid.addView(knob(Param.TUNE, "TUNING", { v ->
             val st = (v - 0.5f) * 24f
             (if (st >= 0) "+" else "") + "%.1f".format(st)
@@ -289,59 +372,49 @@ class MainActivity : Activity() {
         grid.addView(knob(Param.ENV_MOD, "ENV MOD", ::pct))
         grid.addView(knob(Param.DECAY, "DECAY", { v -> "${(200 * Math.pow(10.0, v.toDouble())).roundToInt()}ms" }))
         grid.addView(knob(Param.ACCENT, "ACCENT", ::pct))
-        panel.addView(grid)
-        return panel
     }
 
-    private fun fxPanel(): View {
-        val panel = panel("EFFECTS · MASTER")
-        val grid = FlowGrid(this, dpi(70))
+    private fun addFxControls(grid: ViewGroup) {
         grid.addView(knob(Param.DRIVE, "DRIVE", ::pct))
         grid.addView(knob(Param.DELAY, "DELAY", ::pct))
         grid.addView(knob(Param.DELAY_FEEDBACK, "FEEDBACK", ::pct))
         grid.addView(knob(Param.REVERB, "REVERB", ::pct))
         grid.addView(knob(Param.VOLUME, "VOLUME", ::pct))
-        panel.addView(grid)
-        return panel
     }
 
-    private fun sequencerPanel(): View {
-        val panel = panel("SEQUENCER")
-
-        // Transport + timing
-        val transport = FlowGrid(this, dpi(70))
-        playButton = PadButton(this, "RUN", hasLed = true).apply {
-            setOnClickListener { if (app.transport.playing) stopTransport() else startTransport() }
-        }
-        transport.addView(FrameLayout(this).apply {
-            addView(playButton, FrameLayout.LayoutParams(MATCH_PARENT, dpi(64), Gravity.CENTER))
-        })
-        transport.addView(knob(Param.TEMPO, "TEMPO", { v -> "${Param.normToBpm(v).roundToInt()}" }) { refreshBpm() })
-        transport.addView(knob(Param.SWING, "SWING", { v -> "${50 + (v * 20).roundToInt()}%" }))
+    private fun addTimingControls(grid: ViewGroup) {
+        grid.addView(knob(Param.TEMPO, "TEMPO", { v -> "${Param.normToBpm(v).roundToInt()}" }) { refreshBpm() })
+        grid.addView(knob(Param.SWING, "SWING", { v -> "${50 + (v * 20).roundToInt()}%" }))
         lengthKnob = KnobView(this, "LENGTH", 1f, { v -> "${lengthFromNorm(v)}" }, { v ->
             bank.setLength(pattern, lengthFromNorm(v))
             refreshSteps()
         }, detents = PatternBank.STEPS)
-        transport.addView(lengthKnob)
-        panel.addView(transport)
+        grid.addView(lengthKnob)
+    }
 
-        // Pattern select
-        val patterns = FlowGrid(this, dpi(40), allowedColumns = intArrayOf(3, 9))
+    private fun createPlayButton() {
+        playButton = PadButton(this, "RUN", hasLed = true).apply {
+            setOnClickListener { if (app.transport.playing) stopTransport() else startTransport() }
+        }
+    }
+
+    private fun patternGrid(columns: IntArray, cellHeight: Int = 0): View {
+        val grid = FlowGrid(this, dpi(40), cellHeight = cellHeight, allowedColumns = columns)
         bankButton = PadButton(this, "BANK A", dark = false).apply {
             setOnClickListener { selectPattern((pattern + 8) % PatternBank.PATTERNS) }
         }
-        patterns.addView(bankButton)
+        grid.addView(bankButton)
         for (i in 0 until 8) {
-            patterns.addView(PadButton(this, "${i + 1}", hasLed = true, dark = false).apply {
+            grid.addView(PadButton(this, "${i + 1}", hasLed = true, dark = false).apply {
                 setOnClickListener { selectPattern((pattern / 8) * 8 + i) }
                 patternButtons.add(this)
             })
         }
-        panel.addView(spacer(6))
-        panel.addView(patterns)
+        return grid
+    }
 
-        // Steps
-        val steps = FlowGrid(this, dpi(40), allowedColumns = intArrayOf(4, 8, 16))
+    private fun stepGrid(columns: IntArray, cellHeight: Int = 0): View {
+        val grid = FlowGrid(this, dpi(40), cellHeight = cellHeight, allowedColumns = columns)
         for (i in 0 until PatternBank.STEPS) {
             val cell = StepCell(this, i).apply {
                 setOnClickListener { selectStep(i) }
@@ -351,62 +424,83 @@ class MainActivity : Activity() {
                 }
             }
             cells.add(cell)
-            steps.addView(cell)
+            grid.addView(cell)
         }
-        panel.addView(spacer(6))
-        panel.addView(steps)
+        return grid
+    }
 
-        // Step editing
-        val edit = FlowGrid(this, dpi(56), allowedColumns = intArrayOf(3, 9))
-        edit.addView(pad("◀ STEP") { selectStep((selectedStep + 15) % 16) }.also { it.contentDescription = "Previous step" })
-        edit.addView(pad("STEP ▶") { selectStep((selectedStep + 1) % 16) }.also { it.contentDescription = "Next step" })
+    private fun editGrid(columns: IntArray, cellHeight: Int = 0): View {
+        val grid = FlowGrid(this, dpi(56), cellHeight = cellHeight, allowedColumns = columns)
+        grid.addView(pad("◀ STEP") { selectStep((selectedStep + 15) % 16) }.also { it.contentDescription = "Previous step" })
+        grid.addView(pad("STEP ▶") { selectStep((selectedStep + 1) % 16) }.also { it.contentDescription = "Next step" })
         gateButton = PadButton(this, "GATE", hasLed = true).apply {
             setOnClickListener { editStep { PatternBank.toggleGate(it) } }
         }
-        edit.addView(gateButton)
-        edit.addView(pad("NOTE −") { transpose(-1) }.also { it.contentDescription = "Note down" })
-        edit.addView(pad("NOTE +") { transpose(1) }.also { it.contentDescription = "Note up" })
+        grid.addView(gateButton)
+        grid.addView(pad("NOTE −") { transpose(-1) }.also { it.contentDescription = "Note down" })
+        grid.addView(pad("NOTE +") { transpose(1) }.also { it.contentDescription = "Note up" })
         accentButton = PadButton(this, "ACCENT", hasLed = true).apply {
             setOnClickListener { editStep { PatternBank.toggleAccent(it) } }
         }
-        edit.addView(accentButton)
-        edit.addView(pad("OCT −") { transpose(-12) }.also { it.contentDescription = "Octave down" })
-        edit.addView(pad("OCT +") { transpose(12) }.also { it.contentDescription = "Octave up" })
+        grid.addView(accentButton)
+        grid.addView(pad("OCT −") { transpose(-12) }.also { it.contentDescription = "Octave down" })
+        grid.addView(pad("OCT +") { transpose(12) }.also { it.contentDescription = "Octave up" })
         slideButton = PadButton(this, "SLIDE", hasLed = true).apply {
             setOnClickListener { editStep { PatternBank.toggleSlide(it) } }
         }
-        edit.addView(slideButton)
-        panel.addView(spacer(6))
-        panel.addView(edit)
+        grid.addView(slideButton)
+        return grid
+    }
 
+    private fun createKeyboard(): KeyboardView {
         keyboard = KeyboardView(this).apply {
             onKeyDown = { k -> onKeyboard(k) }
             onKeyUp = { if (!engine.isPlaying) engine.previewNoteOff() }
         }
-        panel.addView(spacer(8))
-        panel.addView(keyboard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        return keyboard
+    }
 
-        // Pattern utilities
-        val utils = FlowGrid(this, dpi(64), allowedColumns = intArrayOf(4, 8))
-        utils.addView(pad("PRESET") { v -> showPresets(v) })
-        utils.addView(pad("RANDOM") { modifyPattern { Presets.randomize(bank, pattern) } })
-        utils.addView(pad("CLEAR") { modifyPattern { bank.clear(pattern) } })
-        utils.addView(pad("UNDO") { restoreUndo() })
-        utils.addView(pad("COPY") {
+    private fun utilityGrid(columns: IntArray, cellHeight: Int = 0): View {
+        val grid = FlowGrid(this, dpi(64), cellHeight = cellHeight, allowedColumns = columns)
+        grid.addView(pad("PRESET") { v -> showPresets(v) })
+        grid.addView(pad("RANDOM") { modifyPattern { Presets.randomize(bank, pattern) } })
+        grid.addView(pad("CLEAR") { modifyPattern { bank.clear(pattern) } })
+        grid.addView(pad("UNDO") { restoreUndo() })
+        grid.addView(pad("COPY") {
             clipboard = snapshot()
             toast("Pattern ${patternLabel(pattern)} copied")
         })
-        utils.addView(pad("PASTE") {
+        grid.addView(pad("PASTE") {
             val c = clipboard ?: return@pad toast("Nothing copied yet")
             modifyPattern { restore(c) }
         })
-        utils.addView(pad("PANIC") {
+        grid.addView(pad("PANIC") {
             app.transport.panic()
             refreshTransport(false)
         }.also { it.contentDescription = "Stop all sound" })
-        utils.addView(pad("EXPORT") { startExport() }.also { it.contentDescription = "Export WAV" })
+        grid.addView(pad("EXPORT") { startExport() }.also { it.contentDescription = "Export WAV" })
+        return grid
+    }
+
+    private fun sequencerPanel(): View {
+        val panel = panel("SEQUENCER")
+        val transport = FlowGrid(this, dpi(70))
+        createPlayButton()
+        transport.addView(FrameLayout(this).apply {
+            addView(playButton, FrameLayout.LayoutParams(MATCH_PARENT, dpi(64), Gravity.CENTER))
+        })
+        addTimingControls(transport)
+        panel.addView(transport)
+        panel.addView(spacer(6))
+        panel.addView(patternGrid(intArrayOf(3, 9)))
+        panel.addView(spacer(6))
+        panel.addView(stepGrid(intArrayOf(4, 8, 16)))
+        panel.addView(spacer(6))
+        panel.addView(editGrid(intArrayOf(3, 9)))
         panel.addView(spacer(8))
-        panel.addView(utils)
+        panel.addView(createKeyboard(), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        panel.addView(spacer(8))
+        panel.addView(utilityGrid(intArrayOf(4, 8)))
         return panel
     }
 
@@ -660,6 +754,7 @@ class MainActivity : Activity() {
 
     private companion object {
         const val STATE_STEP = "step"
+        const val LANDSCAPE_DESIGN_WIDTH_DP = 900
         const val REQUEST_EXPORT = 1
         const val REQUEST_NOTIFICATIONS = 2
         const val KEY_ASKED_NOTIFICATIONS = "asked_notifications"

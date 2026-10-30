@@ -33,9 +33,12 @@ libraries; only foreground-service and notification permissions) targeting **And
 - 16 patterns (2 banks × 8) with per-pattern length, swing, presets, random,
   copy/paste, undo; pattern changes are queued to the end of the loop.
 - WAV export (24-bit, 48 kHz) through the system file picker.
+- Landscape, full-screen layout with every control on one screen, scaled to
+  fit any display. Phones are held in landscape; large screens (where Android
+  16+ ignores orientation requests) fall back to a scrolling layout when the
+  window is taller than wide.
 - Android 17 behaviour: edge-to-edge with inset handling, predictive back,
-  no orientation/resizability restrictions (phones, foldables, tablets, desktop
-  windows), audio focus, stops on headphone unplug.
+  resizable windows, audio focus, stops on headphone unplug.
 - Background playback: a `mediaPlayback` foreground service with a MediaSession
   keeps the pattern running when you leave the app. Stop it from the
   notification, lock screen, headset/Bluetooth buttons, or by swiping the app
