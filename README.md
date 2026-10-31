@@ -46,14 +46,35 @@ libraries; only foreground-service and notification permissions) targeting **And
   playback works without it.
 - TalkBack: knobs are adjustable sliders; every control is labelled.
 
+## Drum machine app (`android/drums`)
+
+A second standalone app, **VTLO DRUMS**, built on the same engine design, UI
+and shared `core` module (audio output, transport, background playback, effects,
+widgets, scaled landscape layout).
+
+- Three bundled kits (606, 808, 909), eight tracks each: kick, snare, tom,
+  clap (606: high tom), rim, closed hat, open hat, cymbal (909: ride).
+  Switch the whole machine with the kit buttons, or mix kits per track with
+  the TRACK panel's KIT knob.
+- Samples are converted once to the device's native rate with a
+  Kaiser-windowed sinc (≈100 dB SNR) and cached; retuned tracks use 4-point
+  Hermite interpolation.
+- 8×16 step grid with per-step accent (long-press), per-track level, tune
+  (±12 semitones), decay, pan and mute, closed-hat choke of the open hat, and
+  click-free retriggering.
+- Sample-accurate sequencer, 16 patterns with length and swing, queued pattern
+  changes, presets, random, copy/paste, undo, WAV export, drive, delay, reverb,
+  background playback.
+
 **Build**
 ```bash
 cd android
 ./gradlew testDebugUnitTest assembleRelease
-# -> app/build/outputs/apk/release/app-release.apk
+# -> app/build/outputs/apk/release/app-release.apk     (VTLO 3O3)
+# -> drums/build/outputs/apk/release/drums-release.apk (VTLO DRUMS)
 ```
 Requires JDK 17+ and the Android SDK with `platforms;android-37.0` and
 `build-tools;37.0.0`. Release builds are minified and signed with
 `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`)
 if present, otherwise with the local debug key. CI builds the APK on every push
-(see the "Android APK" workflow artifacts).
+(see the "Android APK" workflow artifacts: `vtlo-3o3-apk` and `vtlo-drums-apk`).

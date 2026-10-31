@@ -1,5 +1,11 @@
 package com.vtlo.acid303.dsp
 
+import com.vtlo.core.audio.SequencerEngine
+import com.vtlo.core.dsp.FdnReverb
+import com.vtlo.core.dsp.OnePoleHighpass
+import com.vtlo.core.dsp.Overdrive
+import com.vtlo.core.dsp.PingPongDelay
+import com.vtlo.core.dsp.SoftLimiter
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicIntegerArray
 import kotlin.math.exp
@@ -37,7 +43,7 @@ enum class Param(val key: String, val default: Float) {
  * public method is safe to call from the UI thread; they communicate through
  * atomics and a single-producer/single-consumer command queue.
  */
-class AcidEngine(val sampleRate: Int) {
+class AcidEngine(val sampleRate: Int) : SequencerEngine {
     val bank = PatternBank()
 
     private val params = AtomicIntegerArray(Param.entries.size).also { a ->
@@ -50,7 +56,7 @@ class AcidEngine(val sampleRate: Int) {
     /** Pattern the sequencer switches to at the end of the current loop. */
     @Volatile var selectedPattern = 0
 
-    @Volatile var isPlaying = false
+    @Volatile override var isPlaying = false
         private set
     @Volatile var currentStep = -1
         private set
@@ -84,9 +90,9 @@ class AcidEngine(val sampleRate: Int) {
         Param.entries.forEach { smooth[it.ordinal] = it.default.toDouble() }
     }
 
-    fun play() = post(CMD_PLAY, 0)
-    fun stop() = post(CMD_STOP, 0)
-    fun panic() = post(CMD_PANIC, 0)
+    override fun play() = post(CMD_PLAY, 0)
+    override fun stop() = post(CMD_STOP, 0)
+    override fun panic() = post(CMD_PANIC, 0)
 
     fun previewNoteOn(note: Int, accent: Boolean) = post(CMD_NOTE_ON, note or (if (accent) 0x100 else 0))
     fun previewNoteOff() = post(CMD_NOTE_OFF, 0)
@@ -135,7 +141,7 @@ class AcidEngine(val sampleRate: Int) {
     }
 
     /** Renders [frames] interleaved stereo frames into [out]. */
-    fun render(out: FloatArray, frames: Int) {
+    override fun render(out: FloatArray, frames: Int) {
         drainCommands()
         val bpm = Param.normToBpm(get(Param.TEMPO)).toDouble()
         val swing = get(Param.SWING) * 0.4

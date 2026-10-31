@@ -1,4 +1,4 @@
-package com.vtlo.acid303.ui
+package com.vtlo.core.ui
 
 import android.content.Context
 import android.graphics.Color

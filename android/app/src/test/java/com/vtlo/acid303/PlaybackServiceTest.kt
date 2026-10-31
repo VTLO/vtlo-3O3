@@ -1,6 +1,7 @@
 package com.vtlo.acid303
 
 import android.content.Intent
+import com.vtlo.core.audio.PlaybackService
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -44,7 +45,7 @@ class PlaybackServiceTest {
         assertSame(svc, app.transport.service)
 
         // Stop action from the notification.
-        svc.onStartCommand(Intent(app, PlaybackService::class.java).setAction("com.vtlo.acid303.action.STOP"), 0, 2)
+        svc.onStartCommand(Intent(app, PlaybackService::class.java).setAction("com.vtlo.core.action.STOP"), 0, 2)
         assertFalse(app.transport.playing)
         assertTrue(sh.isStoppedBySelf)
         assertTrue(sh.isForegroundStopped)

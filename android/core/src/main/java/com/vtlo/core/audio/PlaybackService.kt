@@ -1,4 +1,4 @@
-package com.vtlo.acid303
+package com.vtlo.core.audio
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -14,8 +14,7 @@ import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Build
 import android.os.IBinder
-import com.vtlo.acid303.dsp.Param
-import kotlin.math.roundToInt
+import com.vtlo.core.R
 
 /**
  * `mediaPlayback` foreground service that keeps the sequencer running while the
@@ -24,13 +23,13 @@ import kotlin.math.roundToInt
  * Bluetooth controls can stop playback.
  */
 class PlaybackService : Service() {
-    private val app get() = application as AcidApp
+    private val app get() = application as InstrumentApp
     private lateinit var session: MediaSession
 
     override fun onCreate() {
         super.onCreate()
         app.transport.service = this
-        session = MediaSession(this, "acid303").apply {
+        session = MediaSession(this, packageName).apply {
             setCallback(object : MediaSession.Callback() {
                 override fun onPause() = app.transport.stop()
                 override fun onStop() = app.transport.stop()
@@ -96,16 +95,13 @@ class PlaybackService : Service() {
             }
         )
 
-        val engine = app.engine
-        val p = engine.selectedPattern
-        val title = getString(R.string.notification_title, if (p < 8) 'A' else 'B', p % 8 + 1)
-        val bpm = Param.normToBpm(engine.get(Param.TEMPO)).roundToInt()
-        val text = getString(R.string.notification_text, bpm)
+        val title = app.playbackTitle()
+        val text = app.playbackText()
 
         session.setMetadata(
             MediaMetadata.Builder()
                 .putString(MediaMetadata.METADATA_KEY_TITLE, title)
-                .putString(MediaMetadata.METADATA_KEY_ARTIST, getString(R.string.app_name))
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, applicationInfo.loadLabel(packageManager).toString())
                 .build()
         )
         session.setPlaybackState(
@@ -138,13 +134,13 @@ class PlaybackService : Service() {
     }
 
     private fun openAppIntent(): PendingIntent = PendingIntent.getActivity(
-        this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        this, 0, Intent(this, app.mainActivity).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
     private companion object {
         const val CHANNEL_ID = "playback"
         const val NOTIFICATION_ID = 303
-        const val ACTION_STOP = "com.vtlo.acid303.action.STOP"
+        const val ACTION_STOP = "com.vtlo.core.action.STOP"
     }
 }

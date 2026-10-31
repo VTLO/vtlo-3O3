@@ -18,7 +18,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import android.view.WindowInsets
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.PopupMenu
@@ -30,14 +29,18 @@ import com.vtlo.acid303.dsp.Param
 import com.vtlo.acid303.dsp.PatternBank
 import com.vtlo.acid303.dsp.Presets
 import com.vtlo.acid303.dsp.WavExporter
-import com.vtlo.acid303.ui.FitScaleLayout
-import com.vtlo.acid303.ui.FlowGrid
-import com.vtlo.acid303.ui.KeyboardView
-import com.vtlo.acid303.ui.KnobView
-import com.vtlo.acid303.ui.PadButton
-import com.vtlo.acid303.ui.Palette
-import com.vtlo.acid303.ui.StepCell
-import com.vtlo.acid303.ui.dpi
+import com.vtlo.core.ui.FitScaleLayout
+import com.vtlo.core.ui.FlowGrid
+import com.vtlo.core.ui.KeyboardView
+import com.vtlo.core.ui.KnobView
+import com.vtlo.core.ui.PadButton
+import com.vtlo.core.ui.Palette
+import com.vtlo.core.ui.StepCell
+import com.vtlo.core.ui.applySystemInsets
+import com.vtlo.core.ui.dpi
+import com.vtlo.core.ui.enableEdgeToEdge
+import com.vtlo.core.ui.hideSystemBars
+import com.vtlo.core.ui.isLandscape
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
@@ -119,69 +122,11 @@ class MainActivity : Activity() {
         super.onDestroy()
     }
 
-    // ─── Edge-to-edge & insets ───────────────────────────────
-
-    private fun enableEdgeToEdge() {
-        if (Build.VERSION.SDK_INT >= 30) {
-            window.setDecorFitsSystemWindows(false)
-            window.insetsController?.setSystemBarsAppearance(
-                0,
-                android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
-                    android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-        }
-        if (Build.VERSION.SDK_INT >= 28) {
-            window.attributes = window.attributes.apply {
-                layoutInDisplayCutoutMode = if (Build.VERSION.SDK_INT >= 30)
-                    android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
-                else
-                    android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-            }
-        }
-    }
-
-    private fun isLandscape() = resources.configuration.run { screenWidthDp >= screenHeightDp }
-
-    /** Landscape uses the full screen; bars come back temporarily with a swipe. */
-    private fun hideSystemBars() {
-        if (Build.VERSION.SDK_INT >= 30) {
-            window.insetsController?.apply {
-                hide(WindowInsets.Type.systemBars())
-                systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = window.decorView.systemUiVisibility or
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_FULLSCREEN or
-                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-        }
-    }
-
-    private fun applyInsets(target: View) {
-        target.setOnApplyWindowInsetsListener { v, insets ->
-            if (Build.VERSION.SDK_INT >= 30) {
-                val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
-                v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            } else {
-                @Suppress("DEPRECATION")
-                v.setPadding(
-                    insets.systemWindowInsetLeft, insets.systemWindowInsetTop,
-                    insets.systemWindowInsetRight, insets.systemWindowInsetBottom
-                )
-            }
-            insets
-        }
-    }
-
     // ─── UI construction ─────────────────────────────────────
 
     private fun buildUi(): View {
         val root = FrameLayout(this).apply { setBackgroundColor(Palette.chassis) }
-        applyInsets(root)
+        applySystemInsets(root)
         val content = if (isLandscape()) landscapeUi() else portraitUi()
         root.addView(content, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
         return root

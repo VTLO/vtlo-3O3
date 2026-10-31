@@ -2,9 +2,6 @@
 <resources>
     <string name="app_name">VTLO 3O3</string>
     <string name="subtitle">COMPUTER CONTROLLED  ·  BASS LINE</string>
-    <string name="channel_playback">Playback</string>
-    <string name="channel_playback_description">Shown while a pattern is playing in the background</string>
     <string name="notification_title">Pattern %1$c%2$d</string>
     <string name="notification_text">%1$d BPM · playing</string>
-    <string name="action_stop">Stop</string>
 </resources>

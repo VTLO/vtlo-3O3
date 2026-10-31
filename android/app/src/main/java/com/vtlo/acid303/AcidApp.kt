@@ -1,29 +1,32 @@
 package com.vtlo.acid303
 
-import android.app.Application
 import android.content.Context
 import com.vtlo.acid303.dsp.AcidEngine
 import com.vtlo.acid303.dsp.Param
 import com.vtlo.acid303.dsp.PatternBank
 import com.vtlo.acid303.dsp.Presets
+import com.vtlo.core.audio.InstrumentApp
+import kotlin.math.roundToInt
 
 /**
- * Owns the engine, audio output and transport for the whole process so playback
- * survives configuration changes and continues in the background.
+ * The TB-303 instrument: engine creation, persistence and the playback notification text.
  */
-class AcidApp : Application() {
-    lateinit var output: AudioOutput
-        private set
-    lateinit var engine: AcidEngine
-        private set
-    lateinit var transport: Transport
+class AcidApp : InstrumentApp() {
+    override lateinit var engine: AcidEngine
         private set
 
-    override fun onCreate() {
-        super.onCreate()
-        output = AudioOutput(this)
-        engine = AcidEngine(output.sampleRate)
-        transport = Transport(this)
+    override val mainActivity get() = MainActivity::class.java
+
+    override fun playbackTitle(): String {
+        val p = engine.selectedPattern
+        return getString(R.string.notification_title, if (p < 8) 'A' else 'B', p % 8 + 1)
+    }
+
+    override fun playbackText(): String =
+        getString(R.string.notification_text, Param.normToBpm(engine.get(Param.TEMPO)).roundToInt())
+
+    override fun createEngine(sampleRate: Int) {
+        engine = AcidEngine(sampleRate)
         if (!restore()) {
             Presets.all.forEachIndexed { i, p -> Presets.load(engine.bank, i, p) }
             engine.set(Param.TEMPO, Param.bpmToNorm(Presets.all[0].bpm.toFloat()))

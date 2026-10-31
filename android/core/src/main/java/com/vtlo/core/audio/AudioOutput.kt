@@ -1,4 +1,4 @@
-package com.vtlo.acid303
+package com.vtlo.core.audio
 
 import android.content.Context
 import android.media.AudioAttributes
@@ -7,10 +7,9 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Process
 import android.util.Log
-import com.vtlo.acid303.dsp.AcidEngine
 
 /**
- * Drives [AcidEngine] from a dedicated real-time priority thread writing float
+ * Drives a [SequencerEngine] from a dedicated real-time priority thread writing float
  * PCM into a low-latency AudioTrack at the device's native rate. The buffer
  * starts at two bursts and grows by one burst whenever an underrun is detected.
  */
@@ -26,10 +25,10 @@ class AudioOutput(context: Context) {
     @Volatile private var running = false
     private var thread: Thread? = null
 
-    fun start(engine: AcidEngine) {
+    fun start(engine: SequencerEngine) {
         if (running) return
         running = true
-        thread = Thread({ loop(engine) }, "acid303-audio").apply {
+        thread = Thread({ loop(engine) }, "vtlo-audio").apply {
             isDaemon = true
             start()
         }
@@ -41,7 +40,7 @@ class AudioOutput(context: Context) {
         thread = null
     }
 
-    private fun loop(engine: AcidEngine) {
+    private fun loop(engine: SequencerEngine) {
         Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
         val format = AudioFormat.Builder()
             .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
