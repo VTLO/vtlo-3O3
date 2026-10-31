@@ -35,9 +35,3 @@ jobs:
           name: vtlo-3o3-apk
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: vtlo-drums-apk
-          path: android/drums/build/outputs/apk/release/*.apk
-          if-no-files-found: error

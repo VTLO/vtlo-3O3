@@ -8,10 +8,15 @@ import android.graphics.RectF
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
+import android.view.VelocityTracker
+import android.view.ViewConfiguration
 import android.view.View
 import android.view.ViewGroup
+import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
+import android.widget.OverScroller
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -113,7 +118,12 @@ open class PadButton(
         super.onInitializeAccessibilityNodeInfo(info)
         if (hasLed) {
             info.isCheckable = true
-            info.isChecked = active
+            if (Build.VERSION.SDK_INT >= 36) {
+                info.setChecked(if (active) AccessibilityNodeInfo.CHECKED_STATE_TRUE else AccessibilityNodeInfo.CHECKED_STATE_FALSE)
+            } else {
+                @Suppress("DEPRECATION")
+                info.isChecked = active
+            }
         }
     }
 }
@@ -400,5 +410,132 @@ class FitScaleLayout(context: Context, private val designWidth: Int) : ViewGroup
         child.pivotY = 0f
         child.scaleX = scale
         child.scaleY = scale
+    }
+}
+
+/**
+ * Horizontal pager: full-size pages side by side, swiped with snapping.
+ * Children that track their own drags (knobs, keyboards) disallow interception,
+ * so only drags that start elsewhere turn pages.
+ */
+class PagerLayout(context: Context) : ViewGroup(context) {
+    var onPageChanged: ((Int) -> Unit)? = null
+    var currentPage = 0
+        private set
+
+    private val slop = ViewConfiguration.get(context).scaledTouchSlop
+    private val minFling = ViewConfiguration.get(context).scaledMinimumFlingVelocity
+    private val scroller = OverScroller(context)
+    private var tracker: VelocityTracker? = null
+    private var downX = 0f
+    private var downY = 0f
+    private var lastX = 0f
+    private var dragging = false
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val w = MeasureSpec.getSize(widthMeasureSpec)
+        val h = MeasureSpec.getSize(heightMeasureSpec)
+        for (i in 0 until childCount) {
+            getChildAt(i).measure(
+                MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY)
+            )
+        }
+        setMeasuredDimension(w, h)
+    }
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        val w = r - l
+        for (i in 0 until childCount) getChildAt(i).layout(i * w, 0, (i + 1) * w, b - t)
+        if (!scroller.isFinished) return
+        scrollTo(currentPage * w, 0)
+    }
+
+    fun setPage(page: Int, animate: Boolean) {
+        val p = page.coerceIn(0, maxOf(0, childCount - 1))
+        val changed = p != currentPage
+        currentPage = p
+        if (width == 0) return
+        if (animate) {
+            scroller.startScroll(scrollX, 0, p * width - scrollX, 0, 280)
+            postInvalidateOnAnimation()
+        } else {
+            scroller.forceFinished(true)
+            scrollTo(p * width, 0)
+        }
+        if (changed) {
+            sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_SCROLLED)
+            onPageChanged?.invoke(p)
+        }
+    }
+
+    override fun computeScroll() {
+        if (scroller.computeScrollOffset()) {
+            scrollTo(scroller.currX, 0)
+            postInvalidateOnAnimation()
+        }
+    }
+
+    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                downX = ev.x; downY = ev.y; lastX = ev.x
+                dragging = !scroller.isFinished
+                if (dragging) scroller.forceFinished(true)
+                tracker?.recycle()
+                tracker = VelocityTracker.obtain().also { it.addMovement(ev) }
+            }
+            MotionEvent.ACTION_MOVE -> {
+                tracker?.addMovement(ev)
+                val dx = ev.x - downX
+                val dy = ev.y - downY
+                if (!dragging && abs(dx) > slop && abs(dx) > abs(dy) * 1.5f) {
+                    dragging = true
+                    lastX = ev.x
+                    parent?.requestDisallowInterceptTouchEvent(true)
+                }
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> dragging = false
+        }
+        return dragging
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(ev: MotionEvent): Boolean {
+        tracker?.addMovement(ev)
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> return true
+            MotionEvent.ACTION_MOVE -> {
+                if (!dragging) {
+                    if (abs(ev.x - downX) <= slop) return true
+                    dragging = true
+                    lastX = ev.x
+                }
+                val maxX = (childCount - 1) * width
+                scrollTo((scrollX + (lastX - ev.x).toInt()).coerceIn(0, maxOf(0, maxX)), 0)
+                lastX = ev.x
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                val t = tracker
+                t?.computeCurrentVelocity(1000)
+                val vx = t?.xVelocity ?: 0f
+                val target = when {
+                    vx < -minFling * 4 -> currentPage + 1
+                    vx > minFling * 4 -> currentPage - 1
+                    else -> ((scrollX + width / 2) / maxOf(1, width))
+                }
+                dragging = false
+                tracker?.recycle()
+                tracker = null
+                val p = target.coerceIn(0, maxOf(0, childCount - 1))
+                if (p == currentPage) {
+                    scroller.startScroll(scrollX, 0, p * width - scrollX, 0, 220)
+                    postInvalidateOnAnimation()
+                } else {
+                    setPage(p, animate = true)
+                }
+            }
+        }
+        return true
     }
 }

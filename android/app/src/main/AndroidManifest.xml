@@ -2,11 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Fully offline instrument: no INTERNET or storage permissions.
-         WAV export goes through the Storage Access Framework. -->
+    <!-- Fully offline studio (bass line + drum machine with bundled kits): no INTERNET
+         or storage permissions. WAV export goes through the Storage Access Framework. -->
 
     <application
-        android:name=".AcidApp"
+        android:name=".StudioApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -18,17 +18,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Acid303">
 
-        <!-- Landscape shows every control on one screen. Phones honour this; on large
-             screens Android 16+ ignores it and the activity falls back to its
-             scrolling portrait layout when the window is taller than wide. -->
+        <!-- Orientation is the user's choice (strip button), applied at runtime. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:resizeableActivity="true"
-            android:screenOrientation="sensorLandscape"
-            android:windowSoftInputMode="adjustNothing"
-            tools:ignore="DiscouragedApi,LockedOrientationActivity">
+            android:windowSoftInputMode="adjustNothing">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

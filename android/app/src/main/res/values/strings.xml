@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">VTLO 3O3</string>
     <string name="subtitle">COMPUTER CONTROLLED  ·  BASS LINE</string>
-    <string name="notification_title">Pattern %1$c%2$d</string>
+    <string name="notification_title">Bass %1$s · Drums %2$s</string>
     <string name="notification_text">%1$d BPM · playing</string>
 </resources>

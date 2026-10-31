@@ -1,52 +1,50 @@
 package com.vtlo.drums
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.media.AudioManager
 import android.os.Build
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.os.SystemClock
-import android.view.Choreographer
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.PopupMenu
+import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
 import com.vtlo.core.audio.WavWriter
 import com.vtlo.core.ui.FitScaleLayout
 import com.vtlo.core.ui.FlowGrid
+import com.vtlo.core.ui.InstrumentScreen
 import com.vtlo.core.ui.KnobView
 import com.vtlo.core.ui.PadButton
 import com.vtlo.core.ui.Palette
-import com.vtlo.core.ui.applySystemInsets
+import com.vtlo.core.ui.ScreenHost
 import com.vtlo.core.ui.dpi
-import com.vtlo.core.ui.enableEdgeToEdge
-import com.vtlo.core.ui.hideSystemBars
 import com.vtlo.drums.dsp.DrumEngine
 import com.vtlo.drums.dsp.DrumParam
 import com.vtlo.drums.dsp.DrumPatternBank
 import com.vtlo.drums.dsp.DrumPresets
 import com.vtlo.drums.dsp.Kit
+import com.vtlo.drums.dsp.SampleBank
 import com.vtlo.drums.dsp.TrackParam
-import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
-class MainActivity : Activity() {
+/**
+ * The drum machine page. In landscape every control fits one screen (scaled to
+ * the window); in portrait the page scrolls and each track's 16 steps wrap onto
+ * two lines on narrow screens.
+ *
+ * @param samplesFor sample bank at a given rate, for WAV export.
+ */
+class DrumScreen(
+    host: ScreenHost,
+    private val engine: DrumEngine,
+    private val samplesFor: (Int) -> SampleBank,
+) : InstrumentScreen(host) {
 
-    private val app get() = application as DrumApp
-    private val engine: DrumEngine get() = app.engine
     private val bank: DrumPatternBank get() = engine.bank
     private val pattern get() = engine.selectedPattern
 
@@ -67,110 +65,70 @@ class MainActivity : Activity() {
     private lateinit var playButton: PadButton
     private lateinit var bpmText: TextView
     private lateinit var trackTitle: TextView
-    private lateinit var ruler: StepRuler
-
-    private val mainHandler = Handler(Looper.getMainLooper())
-    private val exportExecutor = Executors.newSingleThreadExecutor()
+    private var ruler: StepRuler? = null
 
     private var lastStep = -2
-    private var lastPlaying = false
     private var blinkPhase = false
     private var frameCount = 0
-    private var animating = false
-    private val seenHits = IntArray(Kit.TRACKS)
+    private val seenHits = IntArray(Kit.TRACKS) { engine.hits.get(it) }
     private val litUntil = LongArray(Kit.TRACKS)
 
-    private val frameCallback = object : Choreographer.FrameCallback {
-        override fun doFrame(frameTimeNanos: Long) {
-            if (!animating) return
-            updateFrame()
-            Choreographer.getInstance().postFrameCallback(this)
-        }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        volumeControlStream = AudioManager.STREAM_MUSIC
-        selectedTrack = savedInstanceState?.getInt(STATE_TRACK, 0) ?: 0
-        for (t in 0 until Kit.TRACKS) seenHits[t] = engine.hits.get(t)
-
-        setContentView(buildUi())
-        enableEdgeToEdge()
-        hideSystemBars()
-        refreshAll()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putInt(STATE_TRACK, selectedTrack)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        app.transport.uiVisible = true
-        app.output.start(engine)
-        animating = true
-        Choreographer.getInstance().postFrameCallback(frameCallback)
-    }
-
-    override fun onStop() {
-        animating = false
-        app.save()
-        // Playback continues in the foreground service; an idle audio device is released.
-        if (!isChangingConfigurations) app.transport.uiVisible = false
-        super.onStop()
-    }
-
-    override fun onDestroy() {
-        exportExecutor.shutdown()
-        super.onDestroy()
-    }
+    private fun dpi(v: Int) = context.dpi(v)
 
     // ─── UI construction ─────────────────────────────────────
 
-    /**
-     * Every control on one screen, laid out at a fixed design width and scaled
-     * uniformly to fit the window (any size or orientation).
-     */
-    private fun buildUi(): View {
-        val root = FrameLayout(this).apply { setBackgroundColor(Palette.chassis) }
-        applySystemInsets(root)
-        val fit = FitScaleLayout(this, dpi(DESIGN_WIDTH_DP))
-        root.addView(fit, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+    override fun build(landscape: Boolean): View {
+        val view = if (landscape) landscapeUi() else portraitUi()
+        refreshAll()
+        return view
+    }
 
+    private fun landscapeUi(): View {
+        val fit = FitScaleLayout(context, dpi(DESIGN_WIDTH_DP))
         val content = column().apply {
             val pad = dpi(8)
             setPadding(pad, pad / 2, pad, pad)
         }
         fit.addView(content)
-        content.addView(header())
+        content.addView(header(landscape = true))
 
         val top = row()
-        top.addView(panel("TRACK").apply {
-            trackTitle = getChildAt(0) as TextView
-            addView(FlowGrid(context, dpi(40), allowedColumns = intArrayOf(5)).also(::addTrackControls))
-        }, weighted(5f, endMargin = 8))
-        top.addView(panel("MASTER · TEMPO").apply {
-            addView(FlowGrid(context, dpi(40), allowedColumns = intArrayOf(9)).also(::addMasterControls))
-        }, weighted(9f))
+        top.addView(trackPanel(intArrayOf(5)), weighted(5f, endMargin = 8))
+        top.addView(masterPanel(intArrayOf(9)), weighted(9f))
         content.addView(top)
 
-        content.addView(panel("SEQUENCER").apply { addView(sequencerGrid()) })
+        content.addView(panel("SEQUENCER").apply { addView(sequencerGrid(landscape = true)) })
 
         val bottom = row()
         bottom.addView(panel("PATTERN").apply {
-            addView(patternGrid())
+            addView(patternGrid(intArrayOf(9), cellHeight = dpi(44)))
         }, weighted(8f, endMargin = 8))
         bottom.addView(panel("UTILITY").apply {
-            addView(utilityGrid())
+            addView(utilityGrid(intArrayOf(8), cellHeight = dpi(44)))
         }, weighted(10f))
         content.addView(bottom)
-        return root
+        return fit
     }
 
-    private fun column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+    private fun portraitUi(): View {
+        val scroll = ScrollView(context).apply { isFillViewport = true }
+        val content = column().apply {
+            val pad = dpi(10)
+            setPadding(pad, pad, pad, pad)
+        }
+        scroll.addView(content, ViewGroup.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        content.addView(header(landscape = false))
+        content.addView(trackPanel(null))
+        content.addView(masterPanel(null))
+        content.addView(panel("SEQUENCER").apply { addView(sequencerGrid(landscape = false)) })
+        content.addView(panel("PATTERN").apply { addView(patternGrid(intArrayOf(3, 9))) })
+        content.addView(panel("UTILITY").apply { addView(utilityGrid(intArrayOf(4, 8))) })
+        return scroll
+    }
 
-    private fun row() = LinearLayout(this).apply {
+    private fun column() = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+
+    private fun row() = LinearLayout(context).apply {
         orientation = LinearLayout.HORIZONTAL
         layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dpi(8) }
     }
@@ -178,31 +136,35 @@ class MainActivity : Activity() {
     private fun weighted(weight: Float, endMargin: Int = 0) =
         LinearLayout.LayoutParams(0, MATCH_PARENT, weight).apply { marginEnd = dpi(endMargin) }
 
-    private fun header(): View {
-        val row = LinearLayout(this).apply {
+    private fun header(landscape: Boolean): View {
+        val top = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dpi(6), dpi(4), dpi(6), dpi(6))
         }
         val titles = column()
-        titles.addView(TextView(this).apply {
-            text = getString(R.string.app_name)
+        titles.addView(TextView(context).apply {
+            text = context.getString(R.string.drums_title)
             setTextColor(Palette.panelText)
-            textSize = 20f
+            textSize = if (landscape) 20f else 22f
             typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
             letterSpacing = 0.12f
         })
-        titles.addView(TextView(this).apply {
-            text = getString(R.string.subtitle)
+        titles.addView(TextView(context).apply {
+            text = context.getString(R.string.drums_subtitle)
             setTextColor(Palette.red)
             textSize = 10f
             letterSpacing = 0.15f
         })
-        row.addView(titles, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+        top.addView(titles, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
 
         // Kit buttons switch every track at once; the TRACK panel's KIT knob mixes kits.
+        val kits = if (landscape) top else LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dpi(6), 0, dpi(6), dpi(8))
+        }
         for (kit in Kit.entries) {
-            val b = PadButton(this, kit.label, hasLed = true, dark = false).apply {
+            val b = PadButton(context, kit.label, hasLed = true, dark = false).apply {
                 contentDescription = "All tracks ${kit.label} kit"
                 setOnClickListener {
                     for (t in 0 until Kit.TRACKS) engine.setKit(t, kit)
@@ -210,10 +172,11 @@ class MainActivity : Activity() {
                 }
             }
             kitButtons.add(b)
-            row.addView(b, LinearLayout.LayoutParams(dpi(72), dpi(48)).apply { marginEnd = dpi(6) })
+            val lp = if (landscape) LinearLayout.LayoutParams(dpi(72), dpi(48)) else LinearLayout.LayoutParams(0, dpi(48), 1f)
+            kits.addView(b, lp.apply { marginEnd = dpi(6) })
         }
 
-        bpmText = TextView(this).apply {
+        bpmText = TextView(context).apply {
             setTextColor(Palette.ledOn)
             textSize = 22f
             typeface = Typeface.MONOSPACE
@@ -225,16 +188,20 @@ class MainActivity : Activity() {
             }
             contentDescription = "Tempo"
         }
-        row.addView(bpmText, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginStart = dpi(8) })
+        top.addView(bpmText, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginStart = dpi(8) })
 
-        playButton = PadButton(this, "RUN", hasLed = true).apply {
-            setOnClickListener { if (app.transport.playing) stopTransport() else startTransport() }
+        playButton = PadButton(context, "RUN", hasLed = true).apply {
+            setOnClickListener { host.toggleTransport() }
         }
-        row.addView(playButton, LinearLayout.LayoutParams(dpi(140), dpi(48)).apply { marginStart = dpi(10) })
-        return row
+        top.addView(playButton, LinearLayout.LayoutParams(dpi(if (landscape) 140 else 96), dpi(48)).apply { marginStart = dpi(10) })
+        if (landscape) return top
+        return column().apply {
+            addView(top)
+            addView(kits)
+        }
     }
 
-    private fun panel(title: String): LinearLayout = LinearLayout(this).apply {
+    private fun panel(title: String): LinearLayout = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(dpi(8), dpi(6), dpi(8), dpi(8))
         background = GradientDrawable().apply {
@@ -242,7 +209,7 @@ class MainActivity : Activity() {
             cornerRadius = dpi(10).toFloat()
             setStroke(dpi(1), Palette.panelEdge)
         }
-        addView(TextView(this@MainActivity).apply {
+        addView(TextView(context).apply {
             text = title
             setTextColor(Palette.red)
             textSize = 11f
@@ -257,8 +224,20 @@ class MainActivity : Activity() {
 
     private fun pct(v: Float) = "${(v * 100).roundToInt()}"
 
+    private fun knobGrid(columns: IntArray?) =
+        if (columns != null) FlowGrid(context, dpi(40), allowedColumns = columns) else FlowGrid(context, dpi(66))
+
+    private fun trackPanel(columns: IntArray?) = panel("TRACK").apply {
+        trackTitle = getChildAt(0) as TextView
+        addView(knobGrid(columns).also(::addTrackControls))
+    }
+
+    private fun masterPanel(columns: IntArray?) = panel("MASTER · TEMPO").apply {
+        addView(knobGrid(columns).also(::addMasterControls))
+    }
+
     private fun masterKnob(p: DrumParam, label: String, format: (Float) -> String, onChange: (() -> Unit)? = null) =
-        KnobView(this, label, p.default, format, { v ->
+        KnobView(context, label, p.default, format, { v ->
             engine.set(p, v)
             onChange?.invoke()
         }).also {
@@ -267,7 +246,7 @@ class MainActivity : Activity() {
         }
 
     private fun trackKnob(p: TrackParam, label: String, format: (Float) -> String) =
-        KnobView(this, label, p.default, format, { v -> engine.set(selectedTrack, p, v) }).also { trackKnobs[p] = it }
+        KnobView(context, label, p.default, format, { v -> engine.set(selectedTrack, p, v) }).also { trackKnobs[p] = it }
 
     private fun addTrackControls(grid: ViewGroup) {
         grid.addView(trackKnob(TrackParam.LEVEL, "LEVEL", ::pct))
@@ -286,7 +265,7 @@ class MainActivity : Activity() {
                 else -> "C"
             }
         })
-        kitKnob = KnobView(this, "KIT", 1f, { v -> Kit.entries[kitIndex(v)].label }, { v ->
+        kitKnob = KnobView(context, "KIT", 1f, { v -> Kit.entries[kitIndex(v)].label }, { v ->
             engine.setKit(selectedTrack, Kit.entries[kitIndex(v)])
             refreshTracks()
         }, detents = Kit.entries.size)
@@ -304,21 +283,25 @@ class MainActivity : Activity() {
         grid.addView(masterKnob(DrumParam.VOLUME, "VOLUME", ::pct))
         grid.addView(masterKnob(DrumParam.TEMPO, "TEMPO", { v -> "${DrumParam.normToBpm(v).roundToInt()}" }) { refreshBpm() })
         grid.addView(masterKnob(DrumParam.SWING, "SWING", { v -> "${50 + (v * 20).roundToInt()}%" }))
-        lengthKnob = KnobView(this, "LENGTH", 1f, { v -> "${lengthFromNorm(v)}" }, { v ->
+        lengthKnob = KnobView(context, "LENGTH", 1f, { v -> "${lengthFromNorm(v)}" }, { v ->
             bank.setLength(pattern, lengthFromNorm(v))
             refreshSteps()
         }, detents = DrumPatternBank.STEPS)
         grid.addView(lengthKnob)
     }
 
-    private fun sequencerGrid(): View {
+    private fun sequencerGrid(landscape: Boolean): View {
         val grid = column()
-        val labelsWidth = dpi(MUTE_WIDTH_DP + NAME_WIDTH_DP + 4)
-        ruler = StepRuler(this)
-        grid.addView(ruler, LinearLayout.LayoutParams(MATCH_PARENT, dpi(16)).apply { marginStart = labelsWidth })
+        if (landscape) {
+            ruler = StepRuler(context).also {
+                grid.addView(it, LinearLayout.LayoutParams(MATCH_PARENT, dpi(16)).apply {
+                    marginStart = dpi(MUTE_WIDTH_DP + NAME_WIDTH_DP + 4)
+                })
+            }
+        }
         for (t in 0 until Kit.TRACKS) {
-            val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            val mute = PadButton(this, "M").apply {
+            val line = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+            val mute = PadButton(context, "M").apply {
                 setOnClickListener {
                     engine.setMuted(t, !engine.isMuted(t))
                     refreshTracks()
@@ -326,7 +309,7 @@ class MainActivity : Activity() {
             }
             muteButtons.add(mute)
             line.addView(mute, LinearLayout.LayoutParams(dpi(MUTE_WIDTH_DP), MATCH_PARENT))
-            val name = TrackButton(this).apply {
+            val name = TrackButton(context).apply {
                 setOnClickListener {
                     selectTrack(t)
                     engine.trigger(t, false)
@@ -334,17 +317,21 @@ class MainActivity : Activity() {
             }
             trackButtons.add(name)
             line.addView(name, LinearLayout.LayoutParams(dpi(NAME_WIDTH_DP), MATCH_PARENT).apply { marginEnd = dpi(4) })
-            val steps = FlowGrid(this, dpi(20), cellHeight = dpi(ROW_HEIGHT_DP), allowedColumns = intArrayOf(16))
+            // Landscape: one line of 16. Portrait: 16 if they fit, otherwise two lines of 8.
+            val steps = FlowGrid(
+                context, dpi(if (landscape) 20 else 26), cellHeight = dpi(ROW_HEIGHT_DP),
+                allowedColumns = if (landscape) intArrayOf(16) else intArrayOf(8, 16)
+            )
             for (s in 0 until DrumPatternBank.STEPS) {
-                val cell = DrumStepCell(this, s).apply {
+                val cell = DrumStepCell(context, s).apply {
                     setOnClickListener {
                         bank.toggle(pattern, t, s)
-                        if (!app.transport.playing && bank.isOn(pattern, t, s)) engine.trigger(t, bank.isAccent(pattern, t, s))
+                        if (!host.transport.playing && bank.isOn(pattern, t, s)) engine.trigger(t, bank.isAccent(pattern, t, s))
                         refreshRow(t)
                     }
                     setOnLongClickListener {
                         bank.toggleAccent(pattern, t, s)
-                        if (!app.transport.playing && bank.isOn(pattern, t, s)) engine.trigger(t, bank.isAccent(pattern, t, s))
+                        if (!host.transport.playing && bank.isOn(pattern, t, s)) engine.trigger(t, bank.isAccent(pattern, t, s))
                         refreshRow(t)
                         true
                     }
@@ -353,19 +340,21 @@ class MainActivity : Activity() {
                 steps.addView(cell)
             }
             line.addView(steps, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            grid.addView(line, LinearLayout.LayoutParams(MATCH_PARENT, dpi(ROW_HEIGHT_DP)))
+            grid.addView(line, LinearLayout.LayoutParams(MATCH_PARENT, if (landscape) dpi(ROW_HEIGHT_DP) else WRAP_CONTENT).apply {
+                if (!landscape) bottomMargin = dpi(4)
+            })
         }
         return grid
     }
 
-    private fun patternGrid(): View {
-        val grid = FlowGrid(this, dpi(30), cellHeight = dpi(44), allowedColumns = intArrayOf(9))
-        bankButton = PadButton(this, "BANK A", dark = false).apply {
+    private fun patternGrid(columns: IntArray, cellHeight: Int = 0): View {
+        val grid = FlowGrid(context, dpi(30), cellHeight = cellHeight, allowedColumns = columns)
+        bankButton = PadButton(context, "BANK A", dark = false).apply {
             setOnClickListener { selectPattern((pattern + 8) % DrumPatternBank.PATTERNS) }
         }
         grid.addView(bankButton)
         for (i in 0 until 8) {
-            grid.addView(PadButton(this, "${i + 1}", hasLed = true, dark = false).apply {
+            grid.addView(PadButton(context, "${i + 1}", hasLed = true, dark = false).apply {
                 setOnClickListener { selectPattern((pattern / 8) * 8 + i) }
                 patternButtons.add(this)
             })
@@ -374,55 +363,31 @@ class MainActivity : Activity() {
     }
 
     private fun pad(label: String, action: (View) -> Unit) =
-        PadButton(this, label).apply { setOnClickListener { action(it) } }
+        PadButton(context, label).apply { setOnClickListener { action(it) } }
 
-    private fun utilityGrid(): View {
-        val grid = FlowGrid(this, dpi(30), cellHeight = dpi(44), allowedColumns = intArrayOf(8))
+    private fun utilityGrid(columns: IntArray, cellHeight: Int = 0): View {
+        val grid = FlowGrid(context, dpi(30), cellHeight = cellHeight, allowedColumns = columns)
         grid.addView(pad("PRESET") { v -> showPresets(v) })
         grid.addView(pad("RANDOM") { modifyPattern { DrumPresets.randomize(bank, pattern) } })
         grid.addView(pad("CLEAR") { modifyPattern { bank.clear(pattern) } })
         grid.addView(pad("UNDO") { restoreUndo() })
         grid.addView(pad("COPY") {
             clipboard = bank.snapshot(pattern)
-            toast("Pattern ${patternLabel(pattern)} copied")
+            host.toast("Pattern ${patternLabel(pattern)} copied")
         })
         grid.addView(pad("PASTE") {
-            val c = clipboard ?: return@pad toast("Nothing copied yet")
+            val c = clipboard ?: return@pad host.toast("Nothing copied yet")
             modifyPattern { bank.restore(pattern, c) }
         })
         grid.addView(pad("PANIC") {
-            app.transport.panic()
-            refreshTransport(false)
+            host.transport.panic()
+            onTransportChanged(false)
         }.also { it.contentDescription = "Stop all sound" })
-        grid.addView(pad("EXPORT") { startExport() }.also { it.contentDescription = "Export WAV" })
+        grid.addView(pad("EXPORT") { startExport() }.also { it.contentDescription = "Export drums as WAV" })
         return grid
     }
 
     // ─── Actions ─────────────────────────────────────────────
-
-    private fun startTransport() {
-        if (!app.transport.start()) {
-            toast("Audio is in use by another app")
-            return
-        }
-        requestNotificationPermissionOnce()
-        refreshTransport(true)
-    }
-
-    private fun stopTransport() {
-        app.transport.stop()
-        refreshTransport(false)
-    }
-
-    /** The playback notification needs this on Android 13+; playback works without it. */
-    private fun requestNotificationPermissionOnce() {
-        if (Build.VERSION.SDK_INT < 33) return
-        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
-        val prefs = app.prefs()
-        if (prefs.getBoolean(KEY_ASKED_NOTIFICATIONS, false)) return
-        prefs.edit().putBoolean(KEY_ASKED_NOTIFICATIONS, true).apply()
-        requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFICATIONS)
-    }
 
     private fun selectPattern(p: Int) {
         engine.selectedPattern = p
@@ -441,14 +406,14 @@ class MainActivity : Activity() {
     }
 
     private fun restoreUndo() {
-        val u = undo ?: return toast("Nothing to undo")
+        val u = undo ?: return host.toast("Nothing to undo")
         undo = bank.snapshot(pattern)
         bank.restore(pattern, u)
         refreshAll()
     }
 
     private fun showPresets(anchor: View) {
-        PopupMenu(this, anchor).apply {
+        PopupMenu(context, anchor).apply {
             DrumPresets.all.forEachIndexed { i, p -> menu.add(0, i, i, "${p.name}  ·  ${p.kit.label}  ·  ${p.bpm} BPM") }
             setOnMenuItemClickListener { item ->
                 val p = DrumPresets.all[item.itemId]
@@ -463,66 +428,38 @@ class MainActivity : Activity() {
         }
     }
 
-    // ─── WAV export (Storage Access Framework, no permissions) ─
-
+    /** Renders four loops of the current pattern with the current sound to a 48 kHz WAV. */
     private fun startExport() {
-        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "audio/wav"
-            putExtra(Intent.EXTRA_TITLE, "vtlo-drums-pattern-${patternLabel(pattern)}.wav")
-        }
-        try {
-            @Suppress("DEPRECATION")
-            startActivityForResult(intent, REQUEST_EXPORT)
-        } catch (e: Exception) {
-            toast("No file picker available")
-        }
-    }
-
-    @Deprecated("Platform API; no AndroidX dependency")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        @Suppress("DEPRECATION")
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != REQUEST_EXPORT || resultCode != RESULT_OK) return
-        val uri = data?.data ?: return
         val live = engine
         val params = DrumParam.entries.associateWith { live.get(it) }
         val trackParams = Array(Kit.TRACKS) { t -> TrackParam.entries.associateWith { live.get(t, it) } }
         val kits = Array(Kit.TRACKS) { live.kit(it) }
         val mutes = BooleanArray(Kit.TRACKS) { live.isMuted(it) }
         val rows = bank.snapshot(pattern)
-        toast("Rendering…")
-        exportExecutor.execute {
-            val ok = try {
-                contentResolver.openOutputStream(uri)?.use { out ->
-                    val e = DrumEngine(EXPORT_RATE, app.samplesFor(EXPORT_RATE))
-                    params.forEach { (p, v) -> e.set(p, v) }
-                    for (t in 0 until Kit.TRACKS) {
-                        trackParams[t].forEach { (p, v) -> e.set(t, p, v) }
-                        e.setKit(t, kits[t])
-                        e.setMuted(t, mutes[t])
-                    }
-                    e.bank.restore(0, rows)
-                    e.selectedPattern = 0
-                    val stepSeconds = 60.0 / DrumParam.normToBpm(e.get(DrumParam.TEMPO)) / 4.0
-                    val playFrames = (EXPORT_LOOPS * rows[0] * stepSeconds * EXPORT_RATE).toInt()
-                    WavWriter.render(out, e, EXPORT_RATE, playFrames, EXPORT_RATE * 2)
-                } != null
-            } catch (e: Exception) {
-                false
+        host.requestExport("vtlo-drums-pattern-${patternLabel(pattern)}.wav") { out ->
+            val e = DrumEngine(EXPORT_RATE, samplesFor(EXPORT_RATE))
+            params.forEach { (p, v) -> e.set(p, v) }
+            for (t in 0 until Kit.TRACKS) {
+                trackParams[t].forEach { (p, v) -> e.set(t, p, v) }
+                e.setKit(t, kits[t])
+                e.setMuted(t, mutes[t])
             }
-            mainHandler.post { toast(if (ok) "WAV exported" else "Export failed") }
+            e.bank.restore(0, rows)
+            e.selectedPattern = 0
+            val stepSeconds = 60.0 / DrumParam.normToBpm(e.get(DrumParam.TEMPO)) / 4.0
+            val playFrames = (EXPORT_LOOPS * rows[0] * stepSeconds * EXPORT_RATE).toInt()
+            WavWriter.render(out, e, EXPORT_RATE, playFrames, EXPORT_RATE * 2)
         }
     }
 
     // ─── Refresh ─────────────────────────────────────────────
 
-    private fun refreshAll() {
+    override fun refreshAll() {
         DrumParam.entries.forEach { p -> masterKnobs[p]?.setValue(engine.get(p)) }
         refreshBpm()
         refreshPatterns()
         refreshTracks()
-        refreshTransport()
+        onTransportChanged(host.transport.playing)
     }
 
     @SuppressLint("SetTextI18n")
@@ -549,7 +486,7 @@ class MainActivity : Activity() {
             trackButtons[t].apply {
                 name = kit.trackNames[t]
                 this.kit = kit.label
-                selectedTrack = t == this@MainActivity.selectedTrack
+                selectedTrack = t == this@DrumScreen.selectedTrack
                 refresh()
             }
             muteButtons[t].apply {
@@ -568,12 +505,12 @@ class MainActivity : Activity() {
 
     private fun refreshSteps() {
         for (t in 0 until Kit.TRACKS) refreshRow(t)
-        ruler.length = bank.length(pattern)
+        ruler?.length = bank.length(pattern)
     }
 
     private fun refreshRow(t: Int) {
         val len = bank.length(pattern)
-        val showPlayhead = app.transport.playing && engine.playingPattern == pattern
+        val showPlayhead = host.transport.playing && engine.playingPattern == pattern
         val cur = engine.currentStep
         val name = engine.kit(t).trackNames[t]
         for (s in cells[t].indices) cells[t][s].apply {
@@ -586,23 +523,20 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun refreshTransport(playing: Boolean = app.transport.playing) {
+    override fun onTransportChanged(playing: Boolean) {
         playButton.active = playing
         playButton.setLabel(if (playing) "STOP" else "RUN")
-        lastPlaying = playing
         refreshSteps()
     }
 
-    private fun updateFrame() {
-        val playing = app.transport.playing
-        if (playing != lastPlaying) refreshTransport(playing)
+    override fun onFrame(playing: Boolean) {
         val step = if (playing && engine.playingPattern == pattern) engine.currentStep else -1
         if (step != lastStep) {
             for (t in 0 until Kit.TRACKS) {
                 if (lastStep in 0 until DrumPatternBank.STEPS) cells[t][lastStep].apply { this.playing = false; invalidate() }
                 if (step in 0 until DrumPatternBank.STEPS) cells[t][step].apply { this.playing = true; invalidate() }
             }
-            ruler.current = step
+            ruler?.current = step
             lastStep = step
         }
         // Flash each track's LED on its hits.
@@ -625,13 +559,10 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-
     private fun lengthFromNorm(v: Float) = 1 + (v * (DrumPatternBank.STEPS - 1)).roundToInt()
     private fun normFromLength(len: Int) = (len - 1f) / (DrumPatternBank.STEPS - 1)
 
     private companion object {
-        const val STATE_TRACK = "track"
         const val DESIGN_WIDTH_DP = 900
         const val MUTE_WIDTH_DP = 52
         const val NAME_WIDTH_DP = 76
@@ -639,8 +570,5 @@ class MainActivity : Activity() {
         const val HIT_FLASH_MS = 90L
         const val EXPORT_RATE = 48000
         const val EXPORT_LOOPS = 4
-        const val REQUEST_EXPORT = 1
-        const val REQUEST_NOTIFICATIONS = 2
-        const val KEY_ASKED_NOTIFICATIONS = "asked_notifications"
     }
 }

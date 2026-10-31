@@ -22,7 +22,7 @@ class PlaybackServiceTest {
     @Test(timeout = 120000)
     fun playsInBackgroundAndStopsFromNotification() {
         val ctl = Robolectric.buildActivity(MainActivity::class.java).create().start()
-        val app = ctl.get().application as AcidApp
+        val app = ctl.get().application as StudioApp
         assertTrue(app.transport.start())
         // Leave the app (also stops the UI frame loop, which Robolectric would spin forever).
         ctl.stop()
@@ -38,7 +38,7 @@ class PlaybackServiceTest {
         assertFalse(sh.isForegroundStopped)
         val n = sh.lastForegroundNotification
         assertNotNull(n)
-        assertEquals("Pattern A1", n.extras.getString("android.title"))
+        assertEquals("Bass A1 · Drums A1", n.extras.getString("android.title"))
         assertEquals(android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK, svc.foregroundServiceType)
 
         assertTrue(app.transport.playing)
@@ -57,7 +57,7 @@ class PlaybackServiceTest {
     @Test(timeout = 120000)
     fun serviceStartedAfterQuickStopStillCallsStartForegroundThenExits() {
         val ctl = Robolectric.buildActivity(MainActivity::class.java).create().start()
-        val app = ctl.get().application as AcidApp
+        val app = ctl.get().application as StudioApp
         app.transport.start()
         ctl.stop()
         val started = shadowOf(app).nextStartedService
