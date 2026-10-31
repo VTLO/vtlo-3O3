@@ -1,5 +1,10 @@
 package com.vtlo.acid303.dsp
 
+import com.vtlo.core.dsp.Biquad
+import com.vtlo.core.dsp.ButterworthLowpass
+import com.vtlo.core.dsp.OnePoleAllpass
+import com.vtlo.core.dsp.OnePoleHighpass
+import com.vtlo.core.dsp.OnePoleLowpass
 import kotlin.math.exp
 import kotlin.math.ln
 import kotlin.math.pow

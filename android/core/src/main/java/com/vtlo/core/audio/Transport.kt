@@ -1,4 +1,4 @@
-package com.vtlo.acid303
+package com.vtlo.core.audio
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -19,7 +19,7 @@ import android.util.Log
  *
  * Main thread only.
  */
-class Transport(private val app: AcidApp) {
+class Transport(private val app: InstrumentApp) {
     private val audioManager = app.getSystemService(AudioManager::class.java)
     private val handler = Handler(Looper.getMainLooper())
 

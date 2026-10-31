@@ -1,4 +1,4 @@
-package com.vtlo.acid303.dsp
+package com.vtlo.core.dsp
 
 import kotlin.math.abs
 import kotlin.math.exp

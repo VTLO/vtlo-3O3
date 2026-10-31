@@ -12,10 +12,30 @@ Then open http://localhost:3000
 
 ## Android app (`android/`)
 
-A standalone, fully offline native Android app (Kotlin, no WebView, no third-party
-libraries; only foreground-service and notification permissions) targeting **Android 17 (API 37)**, min Android 8.0 (API 26).
+**VTLO 3O3** is a standalone, fully offline studio for Android: a TB-303 bass
+line and a 606/808/909 drum machine on two screens you swipe between (or pick
+with the tabs at the top). Native Kotlin, no WebView, no third-party
+libraries; it targets **Android 17 (API 37)** and runs on Android 8.0 (API 26)
+and newer. It only asks for the foreground-service and notification
+permissions it needs for background playback.
 
-**Sound engine**
+**Studio**
+- One transport: RUN on either screen starts both instruments on the same
+  sample, and they share tempo and swing, so they stay locked. BASS ON/OFF and
+  DRUMS ON/OFF take a part out of the mix without stopping it.
+- Orientation option in the top bar: LANDSCAPE (default), PORTRAIT or AUTO
+  ROTATE, remembered between launches. Landscape fits every control of a
+  screen on one display, scaled to the window; portrait scrolls. Large screens
+  (where Android 16+ ignores orientation requests) follow the window's shape.
+- Background playback in a `mediaPlayback` foreground service with a
+  MediaSession: stop from the notification, lock screen, headset or Bluetooth
+  buttons, or by swiping the app away. Audio focus is respected and playback
+  stops when headphones are unplugged.
+- WAV export (24-bit, 48 kHz) of either part through the system file picker.
+- Edge-to-edge, predictive back, resizable windows; TalkBack can operate every
+  control.
+
+**Bass line**
 - TB-303 voice modelled on Open303's measurements: PolyBLEP saw/square, 44 Hz
   pre-HP, 4-pole diode-ladder model with 150 Hz feedback HP and soft-clipping
   feedback, post 24 Hz HP / 14 Hz all-pass / 7.5 Hz notch, calibrated
@@ -23,28 +43,32 @@ libraries; only foreground-service and notification permissions) targeting **And
 - Accent "sweep" circuit: consecutive accents stack, resonance sets the leak.
 - Oscillator and filter run 4× oversampled with a 12th-order anti-aliasing
   decimator (aliasing below −110 dB in tests).
-- Sequencer is clocked by the audio sample counter, so timing is sample-accurate.
-  Slide uses hardware semantics (slide on a step glides into the next one).
-- Overdrive, tempo-synced ping-pong delay, FDN reverb, soft limiter.
-- Low-latency float `AudioTrack` at the device's native rate, real-time thread,
-  buffer auto-grows on underruns.
-
-**App**
-- 16 patterns (2 banks × 8) with per-pattern length, swing, presets, random,
+- Slide uses hardware semantics (slide on a step glides into the next one).
+- 16 patterns (2 banks × 8) with per-pattern length, presets, random,
   copy/paste, undo; pattern changes are queued to the end of the loop.
-- WAV export (24-bit, 48 kHz) through the system file picker.
-- Landscape, full-screen layout with every control on one screen, scaled to
-  fit any display. Phones are held in landscape; large screens (where Android
-  16+ ignores orientation requests) fall back to a scrolling layout when the
-  window is taller than wide.
-- Android 17 behaviour: edge-to-edge with inset handling, predictive back,
-  resizable windows, audio focus, stops on headphone unplug.
-- Background playback: a `mediaPlayback` foreground service with a MediaSession
-  keeps the pattern running when you leave the app. Stop it from the
-  notification, lock screen, headset/Bluetooth buttons, or by swiping the app
-  away. The notification permission is requested once on Android 13+;
-  playback works without it.
-- TalkBack: knobs are adjustable sliders; every control is labelled.
+
+**Drum machine**
+- Three bundled kits (606, 808, 909), eight tracks each: kick, snare, tom,
+  clap (606: high tom), rim, closed hat, open hat, cymbal (909: ride).
+  Switch the whole machine with the kit buttons, or mix kits per track with
+  the TRACK panel's KIT knob.
+- Samples are converted once to the device's native rate with a
+  Kaiser-windowed sinc (≈100 dB SNR) and cached; retuned tracks use 4-point
+  Hermite interpolation.
+- 8×16 step grid with per-step accent (long-press), per-track level, tune
+  (±12 semitones), decay, pan and mute, closed-hat choke of the open hat, and
+  click-free retriggering. 16 patterns, presets, random, copy/paste, undo.
+
+**Shared**
+- Sequencers are clocked by the audio sample counter (sample-accurate).
+- Overdrive, tempo-synced ping-pong delay, FDN reverb and soft limiter per
+  part, plus a limiter on the mix.
+- Low-latency float `AudioTrack` at the device's native rate, real-time
+  thread, buffer auto-grows on underruns.
+
+**Modules**: `core` (audio output, transport, service, effects, widgets,
+pager), `drums` (drum engine, kits, drum screen), `app` (bass line, studio
+engine, the activity).
 
 **Build**
 ```bash
@@ -56,4 +80,4 @@ Requires JDK 17+ and the Android SDK with `platforms;android-37.0` and
 `build-tools;37.0.0`. Release builds are minified and signed with
 `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`)
 if present, otherwise with the local debug key. CI builds the APK on every push
-(see the "Android APK" workflow artifacts).
+(see the "Android APK" workflow artifact `vtlo-3o3-apk`).
