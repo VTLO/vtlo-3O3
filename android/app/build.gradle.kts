@@ -83,6 +83,7 @@ android {
 dependencies {
     implementation(project(":core"))
     implementation(project(":drums"))
+    implementation(project(":sampler"))
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.17")
 }

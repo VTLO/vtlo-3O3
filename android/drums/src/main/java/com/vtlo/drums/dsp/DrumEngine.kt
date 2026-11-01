@@ -6,6 +6,7 @@ import com.vtlo.core.dsp.OnePoleHighpass
 import com.vtlo.core.dsp.Overdrive
 import com.vtlo.core.dsp.PingPongDelay
 import com.vtlo.core.dsp.SoftLimiter
+import com.vtlo.core.seq.StepPatternBank
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicIntegerArray
 import kotlin.math.PI
@@ -54,7 +55,7 @@ class DrumEngine(val sampleRate: Int, private val samples: SampleBank) : Sequenc
         require(samples.sampleRate == sampleRate) { "Samples must be converted to the engine rate" }
     }
 
-    val bank = DrumPatternBank()
+    val bank = StepPatternBank()
 
     private val params = AtomicIntegerArray(DrumParam.entries.size).also { a ->
         DrumParam.entries.forEach { a.set(it.ordinal, it.default.toRawBits()) }

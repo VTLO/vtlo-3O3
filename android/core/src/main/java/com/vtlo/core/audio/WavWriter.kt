@@ -42,6 +42,25 @@ object WavWriter {
         return frames
     }
 
+    /** Writes mono 32-bit float audio (lossless storage for recorded samples). */
+    fun writeMonoFloat(out: OutputStream, data: FloatArray, sampleRate: Int) {
+        val s = BufferedOutputStream(out, 1 shl 16)
+        fun str(v: String) = s.write(v.toByteArray(Charsets.US_ASCII))
+        fun i32(v: Int) {
+            s.write(v); s.write(v shr 8); s.write(v shr 16); s.write(v shr 24)
+        }
+        fun i16(v: Int) {
+            s.write(v); s.write(v shr 8)
+        }
+        val dataBytes = data.size * 4
+        str("RIFF"); i32(36 + dataBytes); str("WAVE")
+        str("fmt "); i32(16); i16(3); i16(1); i32(sampleRate)
+        i32(sampleRate * 4); i16(4); i16(32)
+        str("data"); i32(dataBytes)
+        for (v in data) i32(v.toRawBits())
+        s.flush()
+    }
+
     private fun writeHeader(s: OutputStream, sampleRate: Int, dataBytes: Int) {
         fun str(v: String) = s.write(v.toByteArray(Charsets.US_ASCII))
         fun i32(v: Int) {

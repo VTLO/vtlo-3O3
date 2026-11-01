@@ -1,4 +1,4 @@
-package com.vtlo.drums
+package com.vtlo.core.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -11,10 +11,6 @@ import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
-import com.vtlo.core.ui.Palette
-import com.vtlo.core.ui.dp
-import com.vtlo.core.ui.sp
-import com.vtlo.core.ui.textPaint
 import kotlin.math.min
 
 /**
@@ -22,7 +18,7 @@ import kotlin.math.min
  * groups of four steps alternate in shade like the hardware's step keys.
  */
 @SuppressLint("ViewConstructor")
-class DrumStepCell(context: Context, val step: Int) : View(context) {
+class GridStepCell(context: Context, val step: Int) : View(context) {
     var on = false
     var accent = false
     var playing = false
@@ -118,7 +114,7 @@ class StepRuler(context: Context) : View(context) {
     }
 }
 
-/** Track selector: hit LED, track name and the kit it plays from. Red outline when selected. */
+/** Track selector: hit LED, track name and a small tag (kit, source). Red outline when selected. */
 @SuppressLint("ViewConstructor")
 class TrackButton(context: Context) : View(context) {
     var name = ""

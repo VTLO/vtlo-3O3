@@ -4,7 +4,10 @@ import com.vtlo.acid303.dsp.AcidEngine
 import com.vtlo.acid303.dsp.Param
 import com.vtlo.drums.dsp.DrumEngine
 import com.vtlo.drums.dsp.DrumParam
+import com.vtlo.sampler.dsp.SamplerEngine
+import com.vtlo.sampler.dsp.SamplerParam
 import com.vtlo.drums.dsp.SampleBank
+import com.vtlo.drums.dsp.Kit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.BeforeClass
@@ -24,7 +27,10 @@ class StudioEngineTest {
         }
     }
 
-    private fun studio() = StudioEngine(AcidEngine(FS), DrumEngine(FS, samples))
+    private fun studio() = StudioEngine(AcidEngine(FS), DrumEngine(FS, samples), SamplerEngine(FS)).apply {
+        sampler.setSample(0, samples.get(Kit.TR808, 0))
+        sampler.bank.toggle(0, 0, 0)
+    }
 
     @Test
     fun partsStartTogetherAndStayLocked() {
@@ -35,6 +41,7 @@ class StudioEngineTest {
         repeat(FS * 4 / 37) {
             s.render(buf, 37)
             assertEquals(s.bass.currentStep, s.drums.currentStep)
+            assertEquals(s.bass.currentStep, s.sampler.currentStep)
         }
     }
 
@@ -49,15 +56,20 @@ class StudioEngineTest {
         s.bass.set(Param.SWING, 0.5f)
         s.render(buf, 64)
         assertEquals(110f, DrumParam.normToBpm(s.drums.get(DrumParam.TEMPO)), 0.01f)
+        assertEquals(110f, SamplerParam.normToBpm(s.sampler.get(SamplerParam.TEMPO)), 0.01f)
         assertEquals(0.5f, s.drums.get(DrumParam.SWING), 0f)
+        assertEquals(0.5f, s.sampler.get(SamplerParam.SWING), 0f)
+        s.sampler.set(SamplerParam.TEMPO, SamplerParam.bpmToNorm(90f))
+        s.render(buf, 64)
+        assertEquals(90f, Param.normToBpm(s.bass.get(Param.TEMPO)), 0.01f)
+        assertEquals(90f, DrumParam.normToBpm(s.drums.get(DrumParam.TEMPO)), 0.01f)
     }
 
     @Test
     fun partOffTakesItOutOfTheMix() {
         val s = studio()
-        s.bassOn = false
         s.drums.bank.toggle(0, 0, 0)
-        s.drumsOn = false
+        s.parts.forEach { it.on = false }
         s.play()
         val buf = FloatArray(2 * 512)
         var peak = 0f
@@ -67,5 +79,6 @@ class StudioEngineTest {
         }
         assertTrue("muted parts should be silent, peak $peak", peak < 1e-3f)
         assertTrue(s.drums.hits.get(0) > 0) // still running in time
+        assertTrue(s.sampler.hits.get(0) > 0)
     }
 }

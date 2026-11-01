@@ -11,7 +11,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** The combined app: both instruments load, two swipeable pages, user-selected orientation. */
+/** The combined app: all three instruments load, three swipeable pages, user-selected orientation. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36], qualifiers = "w891dp-h411dp-land")
 class StudioTest {
@@ -25,7 +25,7 @@ class StudioTest {
     }
 
     @Test(timeout = 120000)
-    fun bothInstrumentsOnTwoPages() {
+    fun allInstrumentsOnThreePages() {
         val ctl = Robolectric.buildActivity(MainActivity::class.java).create()
         val a = ctl.get()
         val app = a.application as StudioApp
@@ -34,10 +34,14 @@ class StudioTest {
         assertTrue(app.bass.bank.step(0, 0) != 0) // Acid Classic first step
 
         val pager = pager(a)
-        assertEquals(2, pager.childCount)
+        assertEquals(3, pager.childCount)
         assertEquals(0, pager.currentPage)
-        pager.setPage(1, animate = false)
-        assertEquals(1, pager.currentPage)
+        pager.setPage(2, animate = false)
+        assertEquals(2, pager.currentPage)
+
+        // First run: every sampler pad holds a sound from the bundled kits.
+        for (p in 0 until 8) assertTrue(app.sampler.sample(p) != null)
+        assertEquals("808 BD", app.sampler.padNames[0])
 
         // Landscape is the default orientation.
         assertEquals(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE, a.requestedOrientation)
@@ -46,9 +50,9 @@ class StudioTest {
 
     @Test(timeout = 120000)
     @Config(qualifiers = "w411dp-h891dp-port")
-    fun portraitBuildsBothPages() {
+    fun portraitBuildsAllPages() {
         val ctl = Robolectric.buildActivity(MainActivity::class.java).create()
-        assertEquals(2, pager(ctl.get()).childCount)
+        assertEquals(3, pager(ctl.get()).childCount)
         ctl.destroy()
     }
 }

@@ -1,15 +1,17 @@
 package com.vtlo.drums.dsp
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.BeforeClass
-import org.junit.Test
+import com.vtlo.core.dsp.Resampler
+import com.vtlo.core.seq.StepPatternBank
 import java.io.File
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.sin
 import kotlin.math.sqrt
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.BeforeClass
+import org.junit.Test
 
 class DrumEngineTest {
     companion object {
@@ -183,10 +185,10 @@ class DrumEngineTest {
 
     @Test
     fun bankRoundTrips() {
-        val a = DrumPatternBank()
+        val a = StepPatternBank()
         DrumPresets.all.forEachIndexed { i, p -> DrumPresets.load(a, i, p) }
         a.setLength(2, 12)
-        val b = DrumPatternBank()
+        val b = StepPatternBank()
         assertTrue(b.deserialize(a.serialize()))
         assertEquals(a.serialize(), b.serialize())
         assertTrue(!b.deserialize("nope"))
