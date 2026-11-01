@@ -81,6 +81,7 @@ android {
 }
 
 dependencies {
+    api(project(":engine"))
     implementation(project(":core"))
     implementation(project(":drums"))
     implementation(project(":sampler"))

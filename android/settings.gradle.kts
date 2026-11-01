@@ -15,4 +15,8 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "vtlo-3o3"
-include(":core", ":drums", ":sampler", ":app")
+include(":engine", ":desktop")
+// -PdesktopOnly builds just the desktop app (no Android SDK needed), e.g. on Windows CI.
+if (!providers.gradleProperty("desktopOnly").isPresent) {
+    include(":core", ":drums", ":sampler", ":app")
+}
