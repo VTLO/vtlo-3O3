@@ -1,0 +1,21 @@
+1 ICON "vtlo-3o3.ico"
+1 VERSIONINFO
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName", "VTLO"
+      VALUE "FileDescription", "VTLO 3O3 studio"
+      VALUE "FileVersion", "1.0.0"
+      VALUE "ProductName", "VTLO 3O3"
+      VALUE "ProductVersion", "1.0.0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END

@@ -16,7 +16,7 @@ import org.junit.Test
 class DrumEngineTest {
     companion object {
         private const val FS = 48000
-        private val assets = File("src/main/assets")
+        private val assets = File("../drums/src/main/assets")
         private lateinit var samples: SampleBank
 
         @BeforeClass

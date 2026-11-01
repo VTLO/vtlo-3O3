@@ -22,3 +22,7 @@ android {
         checkReleaseBuilds = true
     }
 }
+
+dependencies {
+    api(project(":engine"))
+}

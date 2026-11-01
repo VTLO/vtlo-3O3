@@ -1,4 +1,4 @@
-name: Android APK
+name: Android APK and Windows app
 
 on:
   push:
@@ -27,11 +27,45 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Unit tests, lint, release APK
-        run: ./gradlew --no-daemon testDebugUnitTest lintRelease assembleRelease
+      - name: Unit tests (Android, engine, desktop), lint, release APK
+        run: ./gradlew --no-daemon testDebugUnitTest :engine:test :desktop:test lintRelease assembleRelease
 
       - uses: actions/upload-artifact@v4
         with:
           name: vtlo-3o3-apk
           path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: android
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Engine and desktop tests, desktop build (no Android SDK)
+        run: ./gradlew --no-daemon -PdesktopOnly :engine:test :desktop:test :desktop:installDist
+
+      - name: Package Windows app (jpackage app image with VTLO 3O3.exe)
+        run: |
+          jpackage --type app-image --name "VTLO 3O3" --app-version 1.0.0 --vendor VTLO \
+            --description "VTLO 3O3 studio: bass line, drum machine, sampler" \
+            --icon desktop/packaging/vtlo-3o3.ico \
+            --input desktop/build/install/vtlo-3o3/lib --main-jar desktop.jar \
+            --main-class com.vtlo.desktop.MainKt --dest build/windows
+          cp desktop/packaging/README-windows.txt "build/windows/VTLO 3O3/README.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vtlo-3o3-windows
+          path: android/build/windows/
           if-no-files-found: error

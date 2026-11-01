@@ -81,10 +81,11 @@ for the first time you press REC.
 - Low-latency float `AudioTrack` at the device's native rate, real-time
   thread, buffer auto-grows on underruns.
 
-**Modules**: `core` (audio output, transport, service, effects, widgets,
-pager, step patterns, WAV I/O, resampler), `drums` (drum engine, kits, drum
-screen), `sampler` (sampler engine, recorder, file decoder, sampler screen),
-`app` (bass line, studio engine, the activity).
+**Modules**: `engine` (plain Kotlin/JVM: all three sound engines, sequencers,
+effects, WAV I/O, resampler and the studio mixer, shared with the desktop
+app), `core` (Android audio output, transport, service, widgets, pager),
+`drums` (kits, drum screen), `sampler` (recorder, file decoder, sampler
+screen), `app` (bass line screen, the activity), `desktop` (Windows app).
 
 **Build**
 ```bash
@@ -97,3 +98,32 @@ Requires JDK 17+ and the Android SDK with `platforms;android-37.0` and
 `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`)
 if present, otherwise with the local debug key. CI builds the APK on every push
 (see the "Android APK" workflow artifact `vtlo-3o3-apk`).
+
+## Windows app (`android/desktop`)
+
+The same studio for the computer: the three instruments on three screens (tabs
+at the top), running the very same `engine` code as the Android app, so they
+sound identical. Swing UI drawn to scale like the Android landscape layout
+(resize the window freely), Java Sound for output and the microphone, no
+third-party libraries.
+
+- **Download**: the "Android APK and Windows app" workflow publishes
+  `vtlo-3o3-windows`, a folder with `VTLO 3O3.exe` and its own Java runtime
+  (built with `jpackage`). Unzip anywhere and run; nothing to install.
+- **Keys**: Space run/stop, Tab next screen (F1–F3 jump), Esc panic; bass line
+  keyboard on Z S X D C V G B H N J M , ; sampler pads on Q W E R / A S D F.
+  Right-click a step for gate (bass) or accent (drums, sampler); knobs take
+  drag, mouse wheel, and double-click to reset.
+- Sampler loads WAV, AIFF and AU and records from the default microphone.
+  State and pad audio are saved in `%APPDATA%\VTLO 3O3` (`~/.vtlo-3o3`
+  elsewhere).
+
+**Build**
+```bash
+cd android
+./gradlew -PdesktopOnly :desktop:run          # run it (any OS with JDK 17+)
+./gradlew -PdesktopOnly :desktop:installDist  # jars in desktop/build/install
+desktop/packaging/build-portable.sh           # portable Windows zip from Linux (needs mingw-w64)
+```
+`-PdesktopOnly` skips the Android modules, so no Android SDK is needed.
+
