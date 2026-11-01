@@ -1,5 +1,6 @@
 package com.vtlo.drums.dsp
 
+import com.vtlo.core.seq.StepPatternBank
 import kotlin.random.Random
 
 class DrumPreset(val name: String, val bpm: Int, val kit: Kit, val rows: IntArray)
@@ -13,7 +14,7 @@ object DrumPresets {
     private fun rows(vararg tracks: Pair<Int, String>): IntArray {
         val out = IntArray(Kit.TRACKS)
         for ((t, s) in tracks) {
-            require(s.length == DrumPatternBank.STEPS)
+            require(s.length == StepPatternBank.STEPS)
             var r = 0
             s.forEachIndexed { i, c ->
                 if (c == 'x' || c == 'X') r = r or (1 shl i)
@@ -91,16 +92,16 @@ object DrumPresets {
         )),
     )
 
-    fun load(bank: DrumPatternBank, pattern: Int, preset: DrumPreset) {
+    fun load(bank: StepPatternBank, pattern: Int, preset: DrumPreset) {
         for (t in 0 until Kit.TRACKS) bank.setRow(pattern, t, preset.rows[t])
-        bank.setLength(pattern, DrumPatternBank.STEPS)
+        bank.setLength(pattern, StepPatternBank.STEPS)
     }
 
     /** A random but danceable groove: kick on the beat, backbeat, busy hats. */
-    fun randomize(bank: DrumPatternBank, pattern: Int, random: Random = Random.Default) {
+    fun randomize(bank: StepPatternBank, pattern: Int, random: Random = Random.Default) {
         fun row(prob: (Int) -> Float, accentProb: Float): Int {
             var r = 0
-            for (i in 0 until DrumPatternBank.STEPS) {
+            for (i in 0 until StepPatternBank.STEPS) {
                 if (random.nextFloat() < prob(i)) {
                     r = r or (1 shl i)
                     if (random.nextFloat() < accentProb) r = r or (1 shl (i + 16))

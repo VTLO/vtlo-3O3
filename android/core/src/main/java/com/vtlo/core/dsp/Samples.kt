@@ -1,4 +1,4 @@
-package com.vtlo.drums.dsp
+package com.vtlo.core.dsp
 
 import java.io.InputStream
 import java.nio.ByteBuffer

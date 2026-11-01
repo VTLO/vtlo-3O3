@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -29,12 +30,13 @@ import com.vtlo.core.ui.enableEdgeToEdge
 import com.vtlo.core.ui.hideSystemBars
 import com.vtlo.core.ui.isLandscape
 import com.vtlo.drums.DrumScreen
+import com.vtlo.sampler.SamplerScreen
 import java.io.OutputStream
 import java.util.concurrent.Executors
 
 /**
  * The studio window: a tab strip (pages, parts in the mix, orientation) over a
- * swipeable pager holding the bass line and drum machine screens.
+ * swipeable pager holding the bass line, drum machine and sampler screens.
  */
 class MainActivity : Activity(), ScreenHost {
 
@@ -45,8 +47,7 @@ class MainActivity : Activity(), ScreenHost {
     private lateinit var screens: List<InstrumentScreen>
     private lateinit var pager: PagerLayout
     private val tabs = ArrayList<PadButton>()
-    private lateinit var bassPart: PadButton
-    private lateinit var drumsPart: PadButton
+    private val partButtons = ArrayList<PadButton>()
     private lateinit var orientationButton: PadButton
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -76,6 +77,7 @@ class MainActivity : Activity(), ScreenHost {
         screens = listOf(
             BassScreen(this, app.bass),
             DrumScreen(this, app.drums, app::drumSamplesFor),
+            SamplerScreen(this, app.sampler),
         )
         val page = savedInstanceState?.getInt(STATE_PAGE) ?: app.prefs().getInt(KEY_PAGE, 0)
 
@@ -103,6 +105,7 @@ class MainActivity : Activity(), ScreenHost {
 
     override fun onStop() {
         animating = false
+        if (!isChangingConfigurations) screens.forEach { it.onHostStop() }
         app.prefs().edit().putInt(KEY_PAGE, pager.currentPage).apply()
         app.save()
         // Playback continues in the foreground service; an idle audio device is released.
@@ -123,7 +126,7 @@ class MainActivity : Activity(), ScreenHost {
         val column = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(column, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
 
-        column.addView(strip(), LinearLayout.LayoutParams(MATCH_PARENT, dpi(STRIP_HEIGHT_DP)))
+        column.addView(strip(isLandscape()))
         pager = PagerLayout(this).apply {
             val landscape = isLandscape()
             screens.forEach { addView(it.build(landscape)) }
@@ -136,38 +139,40 @@ class MainActivity : Activity(), ScreenHost {
         return root
     }
 
-    private fun strip(): View {
-        val row = LinearLayout(this).apply {
+    /**
+     * Pages, parts in the mix and the orientation option. One row in landscape;
+     * in portrait the part switches and orientation move to a second row.
+     */
+    private fun strip(landscape: Boolean): View {
+        fun row() = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             val pad = dpi(6)
             setPadding(pad, dpi(2), pad, 0)
         }
-        fun add(v: View, weight: Float) = row.addView(v, LinearLayout.LayoutParams(0, MATCH_PARENT, weight).apply {
+        val first = row()
+        val second = if (landscape) first else row()
+        fun add(r: LinearLayout, v: View, weight: Float) = r.addView(v, LinearLayout.LayoutParams(0, MATCH_PARENT, weight).apply {
             marginEnd = dpi(4)
         })
-        listOf("BASS LINE", "DRUMS").forEachIndexed { i, label ->
+        PAGES.forEachIndexed { i, label ->
             val tab = PadButton(this, label, dark = false).apply {
                 contentDescription = "Show $label"
                 setOnClickListener { pager.setPage(i, animate = true) }
             }
             tabs.add(tab)
-            add(tab, 1.3f)
+            add(first, tab, 1.2f)
         }
-        row.addView(View(this), LinearLayout.LayoutParams(0, 1, 0.4f))
-        bassPart = PadButton(this, "BASS").apply {
-            setOnClickListener {
-                app.engine.bassOn = !app.engine.bassOn
-                refreshStrip()
+        if (landscape) first.addView(View(this), LinearLayout.LayoutParams(0, 1, 0.3f))
+        app.engine.parts.forEachIndexed { i, part ->
+            val b = PadButton(this, PART_NAMES[i]).apply {
+                setOnClickListener {
+                    part.on = !part.on
+                    refreshStrip()
+                }
             }
+            partButtons.add(b)
+            add(second, b, 1f)
         }
-        add(bassPart, 1f)
-        drumsPart = PadButton(this, "DRUMS").apply {
-            setOnClickListener {
-                app.engine.drumsOn = !app.engine.drumsOn
-                refreshStrip()
-            }
-        }
-        add(drumsPart, 1f)
         orientationButton = PadButton(this, "").apply {
             setOnClickListener {
                 val next = Orientation.saved(app.prefs()).next()
@@ -176,19 +181,26 @@ class MainActivity : Activity(), ScreenHost {
                 refreshStrip()
             }
         }
-        add(orientationButton, 1.3f)
-        return row
+        add(second, orientationButton, 1.2f)
+        val height = dpi(STRIP_HEIGHT_DP)
+        if (landscape) return first.apply { layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, height) }
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(first, LinearLayout.LayoutParams(MATCH_PARENT, height))
+            addView(second, LinearLayout.LayoutParams(MATCH_PARENT, height))
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, height * 2)
+        }
     }
 
     private fun refreshStrip() {
         tabs.forEachIndexed { i, t -> t.active = i == pager.currentPage }
-        fun part(b: PadButton, name: String, on: Boolean) {
-            b.active = on
-            b.setLabel(if (on) "$name ON" else "$name OFF")
-            b.contentDescription = "$name in the mix: " + if (on) "on" else "off"
+        app.engine.parts.forEachIndexed { i, part ->
+            val b = partButtons[i]
+            val name = PART_NAMES[i]
+            b.active = part.on
+            b.setLabel(if (part.on) "$name ON" else "$name OFF")
+            b.contentDescription = "$name in the mix: " + if (part.on) "on" else "off"
         }
-        part(bassPart, "BASS", app.engine.bassOn)
-        part(drumsPart, "DRUMS", app.engine.drumsOn)
         val o = Orientation.saved(app.prefs())
         orientationButton.setLabel(o.label)
         orientationButton.contentDescription = "Screen orientation: ${o.label.lowercase()}. Tap to change"
@@ -234,6 +246,38 @@ class MainActivity : Activity(), ScreenHost {
 
     override fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 
+    private var pendingPermission: ((Boolean) -> Unit)? = null
+    private var pendingOpen: ((Uri) -> Unit)? = null
+
+    override fun requestPermission(permission: String, onResult: (Boolean) -> Unit) {
+        if (checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED) return onResult(true)
+        pendingPermission = onResult
+        requestPermissions(arrayOf(permission), REQUEST_PERMISSION)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != REQUEST_PERMISSION) return
+        val callback = pendingPermission
+        pendingPermission = null
+        callback?.invoke(grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+    }
+
+    override fun requestOpenAudio(onPicked: (Uri) -> Unit) {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "audio/*"
+        }
+        try {
+            pendingOpen = onPicked
+            @Suppress("DEPRECATION")
+            startActivityForResult(intent, REQUEST_OPEN)
+        } catch (e: Exception) {
+            pendingOpen = null
+            toast("No file picker available")
+        }
+    }
+
     /** The playback notification needs this on Android 13+; playback works without it. */
     private fun requestNotificationPermissionOnce() {
         if (Build.VERSION.SDK_INT < 33) return
@@ -265,6 +309,13 @@ class MainActivity : Activity(), ScreenHost {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         @Suppress("DEPRECATION")
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_OPEN) {
+            val callback = pendingOpen
+            pendingOpen = null
+            val uri = data?.data
+            if (resultCode == RESULT_OK && uri != null) callback?.invoke(uri)
+            return
+        }
         if (requestCode != REQUEST_EXPORT) return
         val render = pendingExport
         pendingExport = null
@@ -288,6 +339,10 @@ class MainActivity : Activity(), ScreenHost {
         const val STRIP_HEIGHT_DP = 40
         const val REQUEST_EXPORT = 1
         const val REQUEST_NOTIFICATIONS = 2
+        const val REQUEST_PERMISSION = 3
+        const val REQUEST_OPEN = 4
+        val PAGES = listOf("BASS LINE", "DRUMS", "SAMPLER")
+        val PART_NAMES = listOf("BASS", "DRUMS", "SAMPLER")
         const val KEY_ASKED_NOTIFICATIONS = "asked_notifications"
     }
 }

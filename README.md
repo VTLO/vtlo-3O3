@@ -13,16 +13,17 @@ Then open http://localhost:3000
 ## Android app (`android/`)
 
 **VTLO 3O3** is a standalone, fully offline studio for Android: a TB-303 bass
-line and a 606/808/909 drum machine on two screens you swipe between (or pick
-with the tabs at the top). Native Kotlin, no WebView, no third-party
-libraries; it targets **Android 17 (API 37)** and runs on Android 8.0 (API 26)
-and newer. It only asks for the foreground-service and notification
-permissions it needs for background playback.
+line, a 606/808/909 drum machine and a sampler on three screens you swipe
+between (or pick with the tabs at the top). Native Kotlin, no WebView, no
+third-party libraries; it targets **Android 17 (API 37)** and runs on
+Android 8.0 (API 26) and newer. Permissions: foreground service and
+notifications (background playback) and the microphone, which is only asked
+for the first time you press REC.
 
 **Studio**
-- One transport: RUN on either screen starts both instruments on the same
-  sample, and they share tempo and swing, so they stay locked. BASS ON/OFF and
-  DRUMS ON/OFF take a part out of the mix without stopping it.
+- One transport: RUN on any screen starts all three instruments on the same
+  sample, and they share tempo and swing, so they stay locked. BASS, DRUMS and
+  SAMPLER ON/OFF take a part out of the mix without stopping it.
 - Orientation option in the top bar: LANDSCAPE (default), PORTRAIT or AUTO
   ROTATE, remembered between launches. Landscape fits every control of a
   screen on one display, scaled to the window; portrait scrolls. Large screens
@@ -59,6 +60,20 @@ permissions it needs for background playback.
   (±12 semitones), decay, pan and mute, closed-hat choke of the open hat, and
   click-free retriggering. 16 patterns, presets, random, copy/paste, undo.
 
+**Sampler**
+- Eight pads. Record from the microphone (unprocessed source where the device
+  offers it, up to 30 s, live waveform and level meter; silence is trimmed and
+  the take normalized), or load any audio file the device can decode (WAV, MP3,
+  AAC/M4A, OGG, FLAC…). On first run the pads hold sounds from the bundled kits.
+- Per-pad effects: level, tune (±24 semitones), start/end trim (knobs or drag
+  the markers on the waveform), attack, decay, reverse, one-knob low-pass /
+  high-pass resonant filter, bit-crusher (16 → 3 bits with sample-rate
+  reduction), drive, pan and an effects send into the master delay and reverb.
+  NORMAL normalizes a pad, ERASE clears it, MUTE silences it in the sequence.
+- 16-step sequencer per pad with accents, 16 patterns; pad audio is stored in
+  app storage as 32-bit float WAV, settings and patterns in preferences.
+- Recording stops whenever the app leaves the foreground.
+
 **Shared**
 - Sequencers are clocked by the audio sample counter (sample-accurate).
 - Overdrive, tempo-synced ping-pong delay, FDN reverb and soft limiter per
@@ -67,8 +82,9 @@ permissions it needs for background playback.
   thread, buffer auto-grows on underruns.
 
 **Modules**: `core` (audio output, transport, service, effects, widgets,
-pager), `drums` (drum engine, kits, drum screen), `app` (bass line, studio
-engine, the activity).
+pager, step patterns, WAV I/O, resampler), `drums` (drum engine, kits, drum
+screen), `sampler` (sampler engine, recorder, file decoder, sampler screen),
+`app` (bass line, studio engine, the activity).
 
 **Build**
 ```bash

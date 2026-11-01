@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "vtlo-3o3"
-include(":core", ":app", ":drums")
+include(":core", ":drums", ":sampler", ":app")

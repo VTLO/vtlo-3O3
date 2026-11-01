@@ -1,23 +1,24 @@
-package com.vtlo.drums.dsp
+package com.vtlo.core.seq
 
 import java.util.concurrent.atomic.AtomicIntegerArray
 
 /**
- * Pattern memory shared by the UI (editing) and audio thread (playback).
+ * Eight-track step pattern memory shared by the UI (editing) and the audio
+ * thread (playback), used by the drum machine and the sampler.
  * One int per pattern and track: bits 0-15 are the steps that play,
  * bits 16-31 the steps that are accented.
  */
-class DrumPatternBank {
-    private val rows = AtomicIntegerArray(PATTERNS * Kit.TRACKS)
+class StepPatternBank {
+    private val rows = AtomicIntegerArray(PATTERNS * TRACKS)
     private val lengths = AtomicIntegerArray(PATTERNS)
 
     init {
         for (p in 0 until PATTERNS) clear(p)
     }
 
-    fun row(pattern: Int, track: Int): Int = rows.get(pattern * Kit.TRACKS + track)
+    fun row(pattern: Int, track: Int): Int = rows.get(pattern * TRACKS + track)
 
-    fun setRow(pattern: Int, track: Int, value: Int) = rows.set(pattern * Kit.TRACKS + track, value)
+    fun setRow(pattern: Int, track: Int, value: Int) = rows.set(pattern * TRACKS + track, value)
 
     fun isOn(pattern: Int, track: Int, step: Int) = row(pattern, track) and (1 shl step) != 0
 
@@ -41,23 +42,23 @@ class DrumPatternBank {
     fun setLength(pattern: Int, len: Int) = lengths.set(pattern, len.coerceIn(1, STEPS))
 
     fun clear(pattern: Int) {
-        for (t in 0 until Kit.TRACKS) setRow(pattern, t, 0)
+        for (t in 0 until TRACKS) setRow(pattern, t, 0)
         setLength(pattern, STEPS)
     }
 
     /** Pattern as length followed by its rows, for copy/paste and undo. */
-    fun snapshot(pattern: Int) = IntArray(Kit.TRACKS + 1) { if (it == 0) length(pattern) else row(pattern, it - 1) }
+    fun snapshot(pattern: Int) = IntArray(TRACKS + 1) { if (it == 0) length(pattern) else row(pattern, it - 1) }
 
     fun restore(pattern: Int, data: IntArray) {
         setLength(pattern, data[0])
-        for (t in 0 until Kit.TRACKS) setRow(pattern, t, data[t + 1])
+        for (t in 0 until TRACKS) setRow(pattern, t, data[t + 1])
     }
 
     fun serialize(): String = (0 until PATTERNS).joinToString(";") { p -> snapshot(p).joinToString(",") }
 
     fun deserialize(data: String): Boolean {
         val pats = data.split(';').map { it.split(',').mapNotNull(String::toIntOrNull) }
-        if (pats.size != PATTERNS || pats.any { it.size != Kit.TRACKS + 1 }) return false
+        if (pats.size != PATTERNS || pats.any { it.size != TRACKS + 1 }) return false
         pats.forEachIndexed { p, values -> restore(p, values.toIntArray()) }
         return true
     }
@@ -65,5 +66,6 @@ class DrumPatternBank {
     companion object {
         const val PATTERNS = 16
         const val STEPS = 16
+        const val TRACKS = 8
     }
 }

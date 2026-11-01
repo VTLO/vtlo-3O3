@@ -6,91 +6,99 @@ import com.vtlo.core.audio.SequencerEngine
 import com.vtlo.core.dsp.SoftLimiter
 import com.vtlo.drums.dsp.DrumEngine
 import com.vtlo.drums.dsp.DrumParam
+import com.vtlo.sampler.dsp.SamplerEngine
+import com.vtlo.sampler.dsp.SamplerParam
 import kotlin.math.exp
 
 /**
- * Bass line and drum machine as one instrument: both render in the same audio
- * callback, start on the same sample and share tempo and swing, so they stay
- * locked. Each part can be switched out of the mix (it keeps running in time).
+ * Bass line, drum machine and sampler as one instrument: all render in the same
+ * audio callback, start on the same sample and share tempo and swing, so they
+ * stay locked. Each part can be switched out of the mix (it keeps running in time).
  */
-class StudioEngine(val bass: AcidEngine, val drums: DrumEngine) : SequencerEngine {
-    @Volatile var bassOn = true
-    @Volatile var drumsOn = true
+class StudioEngine(val bass: AcidEngine, val drums: DrumEngine, val sampler: SamplerEngine) : SequencerEngine {
 
-    override val isPlaying: Boolean get() = bass.isPlaying || drums.isPlaying
+    /** One instrument in the mix, with access to its (normalized) tempo and swing. */
+    class Part(
+        val engine: SequencerEngine,
+        val getTempo: () -> Float, val setTempo: (Float) -> Unit,
+        val getSwing: () -> Float, val setSwing: (Float) -> Unit,
+    ) {
+        @Volatile var on = true
+        internal var buf = FloatArray(0)
+        internal var gain = Double.NaN // set from [on] on the first render
+    }
 
-    private var bufBass = FloatArray(0)
-    private var bufDrums = FloatArray(0)
-    private var gainBass = Double.NaN // set from the part switches on the first render
-    private var gainDrums = Double.NaN
+    val parts = listOf(
+        Part(bass, { bass.get(Param.TEMPO) }, { bass.set(Param.TEMPO, it) },
+            { bass.get(Param.SWING) }, { bass.set(Param.SWING, it) }),
+        Part(drums, { drums.get(DrumParam.TEMPO) }, { drums.set(DrumParam.TEMPO, it) },
+            { drums.get(DrumParam.SWING) }, { drums.set(DrumParam.SWING, it) }),
+        Part(sampler, { sampler.get(SamplerParam.TEMPO) }, { sampler.set(SamplerParam.TEMPO, it) },
+            { sampler.get(SamplerParam.SWING) }, { sampler.set(SamplerParam.SWING, it) }),
+    )
+
+    override val isPlaying: Boolean get() = parts.any { it.engine.isPlaying }
+
     private val partFade = exp(-1.0 / (0.01 * bass.sampleRate))
     private var tempo = Float.NaN
     private var swing = Float.NaN
 
     init {
-        require(bass.sampleRate == drums.sampleRate)
+        require(bass.sampleRate == drums.sampleRate && bass.sampleRate == sampler.sampleRate)
         syncTiming()
     }
 
-    override fun play() {
-        bass.play()
-        drums.play()
-    }
+    override fun play() = parts.forEach { it.engine.play() }
+    override fun stop() = parts.forEach { it.engine.stop() }
+    override fun panic() = parts.forEach { it.engine.panic() }
 
-    override fun stop() {
-        bass.stop()
-        drums.stop()
-    }
-
-    override fun panic() {
-        bass.panic()
-        drums.panic()
-    }
-
-    /** Whichever part's tempo or swing knob moved last sets it for both. */
+    /**
+     * Whichever part's tempo or swing knob moved last sets it for all. All parts
+     * use the same normalized ranges (60–200 BPM, swing 0–1).
+     */
     private fun syncTiming() {
-        val bt = bass.get(Param.TEMPO)
-        val dt = drums.get(DrumParam.TEMPO)
-        if (bt != tempo) {
-            tempo = bt
-            drums.set(DrumParam.TEMPO, bt)
-        } else if (dt != tempo) {
-            tempo = dt
-            bass.set(Param.TEMPO, dt)
+        tempo = sync(tempo, Part::getTempo, Part::setTempo)
+        swing = sync(swing, Part::getSwing, Part::setSwing)
+    }
+
+    private inline fun sync(last: Float, get: (Part) -> () -> Float, set: (Part) -> (Float) -> Unit): Float {
+        var v = last
+        for (i in parts.indices) {
+            val x = get(parts[i])()
+            if (x != last) {
+                v = x
+                break
+            }
         }
-        val bs = bass.get(Param.SWING)
-        val ds = drums.get(DrumParam.SWING)
-        if (bs != swing) {
-            swing = bs
-            drums.set(DrumParam.SWING, bs)
-        } else if (ds != swing) {
-            swing = ds
-            bass.set(Param.SWING, ds)
-        }
+        if (v == last || v.isNaN()) return last
+        for (i in parts.indices) if (get(parts[i])() != v) set(parts[i])(v)
+        return v
     }
 
     override fun render(out: FloatArray, frames: Int) {
         syncTiming()
         val n = frames * 2
-        if (bufBass.size < n) {
-            bufBass = FloatArray(n)
-            bufDrums = FloatArray(n)
+        for (pi in parts.indices) {
+            val p = parts[pi]
+            if (p.buf.size < n) p.buf = FloatArray(n)
+            p.engine.render(p.buf, frames)
+            if (p.gain.isNaN()) p.gain = if (p.on) 1.0 else 0.0
         }
-        bass.render(bufBass, frames)
-        drums.render(bufDrums, frames)
-        val tb = if (bassOn) 1.0 else 0.0
-        val td = if (drumsOn) 1.0 else 0.0
-        if (gainBass.isNaN()) {
-            gainBass = tb
-            gainDrums = td
+        java.util.Arrays.fill(out, 0, n, 0f)
+        for (pi in parts.indices) {
+            val p = parts[pi]
+            val target = if (p.on) 1.0 else 0.0
+            var g = p.gain
+            val b = p.buf
+            var i = 0
+            for (f in 0 until frames) {
+                g = target + partFade * (g - target)
+                out[i] += (b[i] * g).toFloat()
+                out[i + 1] += (b[i + 1] * g).toFloat()
+                i += 2
+            }
+            p.gain = g
         }
-        var i = 0
-        for (f in 0 until frames) {
-            gainBass = tb + partFade * (gainBass - tb)
-            gainDrums = td + partFade * (gainDrums - td)
-            out[i] = SoftLimiter.process(bufBass[i] * gainBass + bufDrums[i] * gainDrums).toFloat()
-            out[i + 1] = SoftLimiter.process(bufBass[i + 1] * gainBass + bufDrums[i + 1] * gainDrums).toFloat()
-            i += 2
-        }
+        for (i in 0 until n) out[i] = SoftLimiter.process(out[i].toDouble()).toFloat()
     }
 }

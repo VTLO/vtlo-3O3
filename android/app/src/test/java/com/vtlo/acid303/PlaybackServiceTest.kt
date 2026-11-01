@@ -38,7 +38,7 @@ class PlaybackServiceTest {
         assertFalse(sh.isForegroundStopped)
         val n = sh.lastForegroundNotification
         assertNotNull(n)
-        assertEquals("Bass A1 · Drums A1", n.extras.getString("android.title"))
+        assertEquals("Bass A1 · Drums A1 · Sampler A1", n.extras.getString("android.title"))
         assertEquals(android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK, svc.foregroundServiceType)
 
         assertTrue(app.transport.playing)

@@ -3,9 +3,9 @@ package com.vtlo.drums
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.vtlo.core.seq.StepPatternBank
 import com.vtlo.drums.dsp.DrumEngine
 import com.vtlo.drums.dsp.DrumParam
-import com.vtlo.drums.dsp.DrumPatternBank
 import com.vtlo.drums.dsp.DrumPresets
 import com.vtlo.drums.dsp.Kit
 import com.vtlo.drums.dsp.SampleBank
@@ -77,6 +77,6 @@ object DrumStore {
             engine.setKit(t, Kit.entries.firstOrNull { it.name == p.getString("t$t.kit", null) } ?: Kit.TR909)
             engine.setMuted(t, p.getBoolean("t$t.mute", false))
         }
-        engine.selectedPattern = p.getInt(KEY_SELECTED, 0).coerceIn(0, DrumPatternBank.PATTERNS - 1)
+        engine.selectedPattern = p.getInt(KEY_SELECTED, 0).coerceIn(0, StepPatternBank.PATTERNS - 1)
     }
 }

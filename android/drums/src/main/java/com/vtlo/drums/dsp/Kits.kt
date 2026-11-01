@@ -1,5 +1,7 @@
 package com.vtlo.drums.dsp
 
+import com.vtlo.core.dsp.Resampler
+import com.vtlo.core.dsp.WavReader
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.InputStream

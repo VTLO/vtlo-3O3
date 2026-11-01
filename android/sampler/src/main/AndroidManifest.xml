@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sampler library: engine, microphone recorder, file import and the sampler screen. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Recording into a pad. Requested only when REC is first tapped; recording
+         stops whenever the screen leaves the foreground. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+</manifest>

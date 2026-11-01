@@ -2,4 +2,6 @@
 <full-backup-content>
     <include domain="sharedpref" path="acid303.xml" />
     <include domain="sharedpref" path="drums.xml" />
+    <include domain="sharedpref" path="sampler.xml" />
+    <include domain="file" path="sampler/" />
 </full-backup-content>

@@ -1,6 +1,7 @@
 package com.vtlo.core.ui
 
 import android.app.Activity
+import android.net.Uri
 import android.view.View
 import com.vtlo.core.audio.Transport
 import java.io.OutputStream
@@ -20,6 +21,12 @@ interface ScreenHost {
     fun requestExport(fileName: String, render: (OutputStream) -> Unit)
 
     fun toast(message: String)
+
+    /** Asks for a runtime permission if needed; [onResult] gets whether it is granted. */
+    fun requestPermission(permission: String, onResult: (Boolean) -> Unit)
+
+    /** Lets the user pick an audio file; [onPicked] runs only if one was chosen. */
+    fun requestOpenAudio(onPicked: (Uri) -> Unit)
 }
 
 /** One instrument page of the studio. Main thread only. */
@@ -37,4 +44,7 @@ abstract class InstrumentScreen(protected val host: ScreenHost) {
 
     /** Transport state changed (RUN/STOP button). */
     abstract fun onTransportChanged(playing: Boolean)
+
+    /** The app left the foreground: stop anything that must not run in the background. */
+    open fun onHostStop() {}
 }

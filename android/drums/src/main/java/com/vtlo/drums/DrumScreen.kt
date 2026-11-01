@@ -15,17 +15,20 @@ import android.widget.PopupMenu
 import android.widget.ScrollView
 import android.widget.TextView
 import com.vtlo.core.audio.WavWriter
+import com.vtlo.core.seq.StepPatternBank
 import com.vtlo.core.ui.FitScaleLayout
 import com.vtlo.core.ui.FlowGrid
+import com.vtlo.core.ui.GridStepCell
 import com.vtlo.core.ui.InstrumentScreen
 import com.vtlo.core.ui.KnobView
 import com.vtlo.core.ui.PadButton
 import com.vtlo.core.ui.Palette
 import com.vtlo.core.ui.ScreenHost
+import com.vtlo.core.ui.StepRuler
+import com.vtlo.core.ui.TrackButton
 import com.vtlo.core.ui.dpi
 import com.vtlo.drums.dsp.DrumEngine
 import com.vtlo.drums.dsp.DrumParam
-import com.vtlo.drums.dsp.DrumPatternBank
 import com.vtlo.drums.dsp.DrumPresets
 import com.vtlo.drums.dsp.Kit
 import com.vtlo.drums.dsp.SampleBank
@@ -45,7 +48,7 @@ class DrumScreen(
     private val samplesFor: (Int) -> SampleBank,
 ) : InstrumentScreen(host) {
 
-    private val bank: DrumPatternBank get() = engine.bank
+    private val bank: StepPatternBank get() = engine.bank
     private val pattern get() = engine.selectedPattern
 
     private var selectedTrack = 0
@@ -59,7 +62,7 @@ class DrumScreen(
     private val kitButtons = ArrayList<PadButton>()
     private val trackButtons = ArrayList<TrackButton>()
     private val muteButtons = ArrayList<PadButton>()
-    private val cells = Array(Kit.TRACKS) { ArrayList<DrumStepCell>() }
+    private val cells = Array(Kit.TRACKS) { ArrayList<GridStepCell>() }
     private val patternButtons = ArrayList<PadButton>()
     private lateinit var bankButton: PadButton
     private lateinit var playButton: PadButton
@@ -286,7 +289,7 @@ class DrumScreen(
         lengthKnob = KnobView(context, "LENGTH", 1f, { v -> "${lengthFromNorm(v)}" }, { v ->
             bank.setLength(pattern, lengthFromNorm(v))
             refreshSteps()
-        }, detents = DrumPatternBank.STEPS)
+        }, detents = StepPatternBank.STEPS)
         grid.addView(lengthKnob)
     }
 
@@ -322,8 +325,8 @@ class DrumScreen(
                 context, dpi(if (landscape) 20 else 26), cellHeight = dpi(ROW_HEIGHT_DP),
                 allowedColumns = if (landscape) intArrayOf(16) else intArrayOf(8, 16)
             )
-            for (s in 0 until DrumPatternBank.STEPS) {
-                val cell = DrumStepCell(context, s).apply {
+            for (s in 0 until StepPatternBank.STEPS) {
+                val cell = GridStepCell(context, s).apply {
                     setOnClickListener {
                         bank.toggle(pattern, t, s)
                         if (!host.transport.playing && bank.isOn(pattern, t, s)) engine.trigger(t, bank.isAccent(pattern, t, s))
@@ -350,7 +353,7 @@ class DrumScreen(
     private fun patternGrid(columns: IntArray, cellHeight: Int = 0): View {
         val grid = FlowGrid(context, dpi(30), cellHeight = cellHeight, allowedColumns = columns)
         bankButton = PadButton(context, "BANK A", dark = false).apply {
-            setOnClickListener { selectPattern((pattern + 8) % DrumPatternBank.PATTERNS) }
+            setOnClickListener { selectPattern((pattern + 8) % StepPatternBank.PATTERNS) }
         }
         grid.addView(bankButton)
         for (i in 0 until 8) {
@@ -533,8 +536,8 @@ class DrumScreen(
         val step = if (playing && engine.playingPattern == pattern) engine.currentStep else -1
         if (step != lastStep) {
             for (t in 0 until Kit.TRACKS) {
-                if (lastStep in 0 until DrumPatternBank.STEPS) cells[t][lastStep].apply { this.playing = false; invalidate() }
-                if (step in 0 until DrumPatternBank.STEPS) cells[t][step].apply { this.playing = true; invalidate() }
+                if (lastStep in 0 until StepPatternBank.STEPS) cells[t][lastStep].apply { this.playing = false; invalidate() }
+                if (step in 0 until StepPatternBank.STEPS) cells[t][step].apply { this.playing = true; invalidate() }
             }
             ruler?.current = step
             lastStep = step
@@ -559,8 +562,8 @@ class DrumScreen(
         }
     }
 
-    private fun lengthFromNorm(v: Float) = 1 + (v * (DrumPatternBank.STEPS - 1)).roundToInt()
-    private fun normFromLength(len: Int) = (len - 1f) / (DrumPatternBank.STEPS - 1)
+    private fun lengthFromNorm(v: Float) = 1 + (v * (StepPatternBank.STEPS - 1)).roundToInt()
+    private fun normFromLength(len: Int) = (len - 1f) / (StepPatternBank.STEPS - 1)
 
     private companion object {
         const val DESIGN_WIDTH_DP = 900
