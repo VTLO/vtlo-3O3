@@ -128,7 +128,9 @@ class StudioWindow(override val studio: Studio, screenFactory: (Host) -> List<Sc
             p.place(452f + i * 116f, 4f, 110f, 32f)
             parts.add(p); strip.add(p)
         }
-        strip.add(TextBox({ "SPACE run/stop · TAB next screen" }, 9.5f, Colors.panelEdge, bold = false).place(808f, 14f, 190f, 16f))
+        strip.add(TextBox({ "SPACE run/stop · TAB page" }, 9.5f, Colors.panelEdge, bold = false).place(806f, 14f, 150f, 16f))
+        // Upper-right emblem, flipping continuously; not interactive, so it never takes a click.
+        strip.add(Coin().place(962f, 3f, 34f, 34f))
     }
 
     private fun refreshStrip() {

@@ -554,3 +554,51 @@ class Meter(var level: () -> Float) : Widget() {
         if (f > 0f) g.roundRect(x + 3, y + 3, (w - 6) * f, h - 6, 2f, c)
     }
 }
+
+/**
+ * Two-faced emblem flipping around its vertical axis (robot / winking smiley). Decorative only: it is not
+ * interactive, so clicks and drags pass straight through it.
+ */
+class Coin : Widget() {
+    override val interactive = false
+    private val front = face("coin_front.png")
+    private val back = face("coin_back.png")
+    private val start = System.nanoTime()
+
+    override fun paint(g: Graphics2D) {
+        val t = ((System.nanoTime() - start) / 1_000_000L % PERIOD_MS).toDouble() / PERIOD_MS
+        val a = 2.0 * Math.PI * t
+        val c = cos(a).toFloat()
+        val s = sin(a).toFloat()
+        val r = min(w, h) / 2f
+        val cx = x + w / 2f
+        val cy = y + h / 2f
+        val half = r * max(abs(c), 0.04f)
+        val edge = 2f * r * 0.035f * s
+        g.color = RIM
+        g.fill(Ellipse2D.Float(cx - half + edge, cy - r, 2f * half, 2f * r))
+        val img = if (c >= 0f) front else back
+        if (img != null) {
+            val old = g.getRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION)
+            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+            val tx = java.awt.geom.AffineTransform().apply {
+                translate((cx - half).toDouble(), (cy - r).toDouble())
+                scale(2.0 * half / img.width, 2.0 * r / img.height)
+            }
+            g.drawImage(img, tx, null)
+            if (old != null) g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, old)
+        }
+        val dim = ((1f - abs(c)) * 120f).toInt()
+        if (dim > 0) {
+            g.color = Color(0, 0, 0, dim)
+            g.fill(Ellipse2D.Float(cx - half, cy - r, 2f * half, 2f * r))
+        }
+    }
+
+    private companion object {
+        const val PERIOD_MS = 4000L
+        val RIM = Color(0x46, 0x22, 0x0F)
+        fun face(name: String): java.awt.image.BufferedImage? =
+            Coin::class.java.getResourceAsStream("/coin/$name")?.use(javax.imageio.ImageIO::read)
+    }
+}
