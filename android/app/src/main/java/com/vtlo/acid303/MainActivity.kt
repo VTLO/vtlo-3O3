@@ -183,6 +183,8 @@ class MainActivity : Activity(), ScreenHost {
         }
         add(second, orientationButton, 1.2f)
         val height = dpi(STRIP_HEIGHT_DP)
+        // Upper-right emblem: decorative, square, never in the way of a tap.
+        first.addView(CoinView(this), LinearLayout.LayoutParams(height - dpi(4), MATCH_PARENT))
         if (landscape) return first.apply { layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, height) }
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

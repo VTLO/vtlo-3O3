@@ -24,6 +24,24 @@ class StudioTest {
         return find(a.window.decorView)!!
     }
 
+    private fun coins(v: android.view.View): List<CoinView> = when (v) {
+        is CoinView -> listOf(v)
+        is android.view.ViewGroup -> (0 until v.childCount).flatMap { coins(v.getChildAt(it)) }
+        else -> emptyList()
+    }
+
+    /** The emblem sits at the top right and never takes touches, focus or accessibility attention. */
+    private fun checkCoin(a: MainActivity) {
+        val coin = coins(a.window.decorView).single()
+        val row = coin.parent as android.view.ViewGroup
+        assertEquals(coin, row.getChildAt(row.childCount - 1))
+        assertTrue(!coin.isClickable && !coin.isFocusable && !coin.isLongClickable)
+        assertEquals(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS, coin.importantForAccessibility)
+        val down = android.view.MotionEvent.obtain(0, 0, android.view.MotionEvent.ACTION_DOWN, 1f, 1f, 0)
+        assertTrue(!coin.onTouchEvent(down))
+        down.recycle()
+    }
+
     @Test(timeout = 120000)
     fun allInstrumentsOnThreePages() {
         val ctl = Robolectric.buildActivity(MainActivity::class.java).create()
@@ -45,6 +63,7 @@ class StudioTest {
 
         // Landscape is the default orientation.
         assertEquals(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE, a.requestedOrientation)
+        checkCoin(a)
         ctl.destroy()
     }
 
@@ -53,6 +72,7 @@ class StudioTest {
     fun portraitBuildsAllPages() {
         val ctl = Robolectric.buildActivity(MainActivity::class.java).create()
         assertEquals(3, pager(ctl.get()).childCount)
+        checkCoin(ctl.get())
         ctl.destroy()
     }
 }

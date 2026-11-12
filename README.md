@@ -12,6 +12,8 @@ Then open http://localhost:3000
 
 ## Android app (`android/`)
 
+<img src="assets/vtlo-coin.gif" width="96" align="right" alt="VTLO two-faced coin emblem">
+
 **VTLO 3O3** is a standalone, fully offline studio for Android: a TB-303 bass
 line, a 606/808/909 drum machine and a sampler on three screens you swipe
 between (or pick with the tabs at the top). Native Kotlin, no WebView, no
@@ -98,6 +100,14 @@ Requires JDK 17+ and the Android SDK with `platforms;android-37.0` and
 `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`)
 if present, otherwise with the local debug key. CI builds the APK on every push
 (see the "Android APK" workflow artifact `vtlo-3o3-apk`).
+
+### Emblem
+
+Both the Android studio and the Windows app show the two-faced VTLO coin
+(robot on one side, winking smiley on the other) flipping continuously in the
+upper-right corner of every screen. It is purely decorative: it takes no
+taps, clicks or focus, is hidden from screen readers, and on Android it holds
+still when system animations are turned off.
 
 ## Windows app (`android/desktop`)
 

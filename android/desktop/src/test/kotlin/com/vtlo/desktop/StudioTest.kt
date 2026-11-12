@@ -57,4 +57,16 @@ class StudioTest {
         assertTrue(!b.engine.parts[1].on)
         assertNotNull(b.sampler.sample(0)) // seeded pad audio was stored and reloaded
     }
+
+    @Test
+    fun coinPaintsBothFacesWithoutTakingClicks() {
+        val coin = com.vtlo.desktop.ui.Coin().place(0f, 0f, 64f, 64f)
+        assertTrue(!coin.interactive)
+        val img = java.awt.image.BufferedImage(64, 64, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        val g = img.createGraphics()
+        coin.paint(g)
+        g.dispose()
+        // The face images are bundled, so the centre of the coin is painted.
+        assertTrue((img.getRGB(32, 32) ushr 24) != 0)
+    }
 }
