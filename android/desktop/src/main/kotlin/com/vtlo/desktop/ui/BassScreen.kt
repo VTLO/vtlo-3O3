@@ -14,8 +14,8 @@ fun pct(v: Float) = "${(v * 100).roundToInt()}"
 fun patternLabel(p: Int) = "${if (p < 8) 'A' else 'B'}${p % 8 + 1}"
 
 /** The TB-303 page: same controls and behaviour as the Android landscape layout. */
-class BassScreen(host: Host) : Screen(host) {
-    private val engine = host.studio.bass
+class BassScreen(host: Host, private val number: Int = 1) : Screen(host) {
+    private val engine = if (number == 1) host.studio.bass else host.studio.bass2
     private val bank: PatternBank get() = engine.bank
     private val pattern get() = engine.selectedPattern
 
@@ -42,7 +42,7 @@ class BassScreen(host: Host) : Screen(host) {
     init {
         val t = TOP
         add(TextBox({ "VTLO 3O3" }, 22f, Colors.panelText), 16f, t + 4, 300f, 28f)
-        add(TextBox({ "COMPUTER CONTROLLED  ·  BASS LINE" }, 10f, Colors.red), 16f, t + 32, 320f, 14f)
+        add(TextBox({ "COMPUTER CONTROLLED  ·  BASS LINE" + if (number > 1) " $number" else "" }, 10f, Colors.red), 16f, t + 32, 320f, 14f)
         add(BpmDisplay { Param.normToBpm(engine.get(Param.TEMPO)).roundToInt() }, 740f, t + 8, 90f, 40f)
         run = add(Pad("RUN", led = true, hint = "Start/stop all instruments (Space)") { host.toggleTransport() }, 840f, t + 6, 150f, 46f)
 
@@ -212,7 +212,7 @@ class BassScreen(host: Host) : Screen(host) {
     private fun export() {
         val params = Param.entries.associateWith { engine.get(it) }
         val steps = snapshot()
-        host.saveWav("vtlo-303-pattern-${patternLabel(pattern)}.wav") { out ->
+        host.saveWav("vtlo-303${if (number > 1) "-$number" else ""}-pattern-${patternLabel(pattern)}.wav") { out ->
             WavExporter.export(out, loops = 4, patternLength = steps[0]) { e ->
                 params.forEach { (p, v) -> e.set(p, v) }
                 e.bank.setLength(0, steps[0])

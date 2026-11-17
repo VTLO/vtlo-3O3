@@ -45,10 +45,12 @@ object DrumStore {
         return bank
     }
 
-    fun prefs(context: Context): SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    /** Each drum machine keeps its own preferences file: "drums" for the first, "drums2" for the second. */
+    fun prefs(context: Context, number: Int = 1): SharedPreferences =
+        context.getSharedPreferences(if (number == 1) PREFS else "$PREFS$number", Context.MODE_PRIVATE)
 
-    fun save(context: Context, engine: DrumEngine) {
-        prefs(context).edit().apply {
+    fun save(context: Context, engine: DrumEngine, number: Int = 1) {
+        prefs(context, number).edit().apply {
             putString(KEY_PATTERNS, engine.bank.serialize())
             putInt(KEY_SELECTED, engine.selectedPattern)
             DrumParam.entries.forEach { putFloat(it.key, engine.get(it)) }
@@ -60,11 +62,19 @@ object DrumStore {
         }.apply()
     }
 
-    /** Restores the saved state, or loads the presets on first run. */
-    fun restore(context: Context, engine: DrumEngine) {
-        val p = prefs(context)
+    /**
+     * Restores the saved state. On first run the first drum machine gets the presets;
+     * the second ([withPresets] false) starts with empty patterns, so the mix is unchanged until it is programmed.
+     */
+    fun restore(context: Context, engine: DrumEngine, number: Int = 1, withPresets: Boolean = number == 1) {
+        val p = prefs(context, number)
         val data = p.getString(KEY_PATTERNS, null)
         if (data == null || !engine.bank.deserialize(data)) {
+            if (!withPresets) {
+                val first = DrumPresets.all[0]
+                for (t in 0 until Kit.TRACKS) engine.setKit(t, first.kit)
+                return
+            }
             DrumPresets.all.forEachIndexed { i, preset -> DrumPresets.load(engine.bank, i, preset) }
             val first = DrumPresets.all[0]
             for (t in 0 until Kit.TRACKS) engine.setKit(t, first.kit)

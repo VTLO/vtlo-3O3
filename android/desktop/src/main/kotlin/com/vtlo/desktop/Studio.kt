@@ -23,8 +23,8 @@ import java.util.Properties
 import java.util.concurrent.Executors
 
 /**
- * The desktop studio: the same three engines as the Android app, one audio
- * output, and persistence in the user's data folder (a properties file plus
+ * The desktop studio: the same five instruments as the Android app (two bass lines, two
+ * drum machines, a sampler), one audio output, and persistence in the user's data folder (a properties file plus
  * each sampler pad as a 32-bit float WAV).
  */
 class Studio(private val dataDir: File, val sampleRate: Int = pickOutputRate()) {
@@ -37,21 +37,26 @@ class Studio(private val dataDir: File, val sampleRate: Int = pickOutputRate()) 
     val bass = AcidEngine(sampleRate)
     val drums = DrumEngine(sampleRate, drumSamples)
     val sampler = SamplerEngine(sampleRate)
+    val bass2 = AcidEngine(sampleRate)
+    val drums2 = DrumEngine(sampleRate, drumSamples)
     val engine: StudioEngine
     val output: AudioOutput
 
     init {
         if (stateFile.exists()) runCatching { stateFile.inputStream().use(props::load) }
-        if (!restoreBass()) {
+        if (!restoreBass(bass, "bass")) {
             Presets.all.forEachIndexed { i, p -> Presets.load(bass.bank, i, p) }
             bass.set(Param.TEMPO, Param.bpmToNorm(Presets.all[0].bpm.toFloat()))
         }
-        if (!restoreDrums()) {
+        if (!restoreDrums(drums, "drums")) {
             DrumPresets.all.forEachIndexed { i, p -> DrumPresets.load(drums.bank, i, p) }
             for (t in 0 until Kit.TRACKS) drums.setKit(t, DrumPresets.all[0].kit)
         }
         if (!restoreSampler()) seedSampler()
-        engine = StudioEngine(bass, drums, sampler)
+        // The second bass line and drum machine start with empty patterns: the mix is as before until they are programmed.
+        restoreBass(bass2, "bass2")
+        if (!restoreDrums(drums2, "drums2")) for (t in 0 until Kit.TRACKS) drums2.setKit(t, DrumPresets.all[0].kit)
+        engine = StudioEngine(bass, drums, sampler, bass2, drums2)
         engine.parts.forEachIndexed { i, part -> part.on = props.getProperty("part$i", "true").toBoolean() }
         output = AudioOutput(engine, sampleRate)
     }
@@ -106,18 +111,10 @@ class Studio(private val dataDir: File, val sampleRate: Int = pickOutputRate()) 
 
     fun save() {
         val p = props
-        p["bass.patterns"] = bass.bank.serialize()
-        p["bass.selected"] = bass.selectedPattern.toString()
-        Param.entries.forEach { p["bass.${it.key}"] = bass.get(it).toString() }
-
-        p["drums.patterns"] = drums.bank.serialize()
-        p["drums.selected"] = drums.selectedPattern.toString()
-        DrumParam.entries.forEach { p["drums.${it.key}"] = drums.get(it).toString() }
-        for (t in 0 until Kit.TRACKS) {
-            TrackParam.entries.forEach { p["drums.t$t.${it.key}"] = drums.get(t, it).toString() }
-            p["drums.t$t.kit"] = drums.kit(t).name
-            p["drums.t$t.mute"] = drums.isMuted(t).toString()
-        }
+        saveBass(bass, "bass")
+        saveBass(bass2, "bass2")
+        saveDrums(drums, "drums")
+        saveDrums(drums2, "drums2")
 
         p["sampler.patterns"] = sampler.bank.serialize()
         p["sampler.selected"] = sampler.selectedPattern.toString()
@@ -139,24 +136,42 @@ class Studio(private val dataDir: File, val sampleRate: Int = pickOutputRate()) 
 
     private fun f(key: String, default: Float) = props.getProperty(key)?.toFloatOrNull() ?: default
 
-    private fun restoreBass(): Boolean {
-        val data = props.getProperty("bass.patterns") ?: return false
-        if (!bass.bank.deserialize(data)) return false
-        Param.entries.forEach { bass.set(it, f("bass.${it.key}", it.default)) }
-        bass.selectedPattern = (props.getProperty("bass.selected")?.toIntOrNull() ?: 0).coerceIn(0, PatternBank.PATTERNS - 1)
+    // The first bass line / drum machine keep the original keys ("bass.", "drums."); the second ones use "bass2.", "drums2.".
+    private fun saveBass(e: AcidEngine, k: String) {
+        props["$k.patterns"] = e.bank.serialize()
+        props["$k.selected"] = e.selectedPattern.toString()
+        Param.entries.forEach { props["$k.${it.key}"] = e.get(it).toString() }
+    }
+
+    private fun saveDrums(e: DrumEngine, k: String) {
+        props["$k.patterns"] = e.bank.serialize()
+        props["$k.selected"] = e.selectedPattern.toString()
+        DrumParam.entries.forEach { props["$k.${it.key}"] = e.get(it).toString() }
+        for (t in 0 until Kit.TRACKS) {
+            TrackParam.entries.forEach { props["$k.t$t.${it.key}"] = e.get(t, it).toString() }
+            props["$k.t$t.kit"] = e.kit(t).name
+            props["$k.t$t.mute"] = e.isMuted(t).toString()
+        }
+    }
+
+    private fun restoreBass(e: AcidEngine, k: String): Boolean {
+        val data = props.getProperty("$k.patterns") ?: return false
+        if (!e.bank.deserialize(data)) return false
+        Param.entries.forEach { e.set(it, f("$k.${it.key}", it.default)) }
+        e.selectedPattern = (props.getProperty("$k.selected")?.toIntOrNull() ?: 0).coerceIn(0, PatternBank.PATTERNS - 1)
         return true
     }
 
-    private fun restoreDrums(): Boolean {
-        val data = props.getProperty("drums.patterns") ?: return false
-        if (!drums.bank.deserialize(data)) return false
-        DrumParam.entries.forEach { drums.set(it, f("drums.${it.key}", it.default)) }
+    private fun restoreDrums(e: DrumEngine, k: String): Boolean {
+        val data = props.getProperty("$k.patterns") ?: return false
+        if (!e.bank.deserialize(data)) return false
+        DrumParam.entries.forEach { e.set(it, f("$k.${it.key}", it.default)) }
         for (t in 0 until Kit.TRACKS) {
-            TrackParam.entries.forEach { drums.set(t, it, f("drums.t$t.${it.key}", it.default)) }
-            drums.setKit(t, Kit.entries.firstOrNull { it.name == props.getProperty("drums.t$t.kit") } ?: Kit.TR909)
-            drums.setMuted(t, props.getProperty("drums.t$t.mute").toBoolean())
+            TrackParam.entries.forEach { e.set(t, it, f("$k.t$t.${it.key}", it.default)) }
+            e.setKit(t, Kit.entries.firstOrNull { it.name == props.getProperty("$k.t$t.kit") } ?: Kit.TR909)
+            e.setMuted(t, props.getProperty("$k.t$t.mute").toBoolean())
         }
-        drums.selectedPattern = (props.getProperty("drums.selected")?.toIntOrNull() ?: 0).coerceIn(0, StepPatternBank.PATTERNS - 1)
+        e.selectedPattern = (props.getProperty("$k.selected")?.toIntOrNull() ?: 0).coerceIn(0, StepPatternBank.PATTERNS - 1)
         return true
     }
 

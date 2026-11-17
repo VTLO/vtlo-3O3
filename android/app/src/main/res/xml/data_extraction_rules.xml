@@ -3,12 +3,14 @@
     <cloud-backup>
         <include domain="sharedpref" path="acid303.xml" />
         <include domain="sharedpref" path="drums.xml" />
+        <include domain="sharedpref" path="drums2.xml" />
         <include domain="sharedpref" path="sampler.xml" />
         <include domain="file" path="sampler/" />
     </cloud-backup>
     <device-transfer>
         <include domain="sharedpref" path="acid303.xml" />
         <include domain="sharedpref" path="drums.xml" />
+        <include domain="sharedpref" path="drums2.xml" />
         <include domain="sharedpref" path="sampler.xml" />
         <include domain="file" path="sampler/" />
     </device-transfer>

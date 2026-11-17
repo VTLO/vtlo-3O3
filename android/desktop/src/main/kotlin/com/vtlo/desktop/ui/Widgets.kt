@@ -567,12 +567,13 @@ class Coin : Widget() {
 
     override fun paint(g: Graphics2D) {
         val t = ((System.nanoTime() - start) / 1_000_000L % PERIOD_MS).toDouble() / PERIOD_MS
-        val a = 2.0 * Math.PI * t
-        val c = cos(a).toFloat()
-        val s = sin(a).toFloat()
-        val r = min(w, h) / 2f
-        val cx = x + w / 2f
-        val cy = y + h / 2f
+        draw(g, x + w / 2f, y + h / 2f, min(w, h) / 2f, (2.0 * Math.PI * t).toFloat())
+    }
+
+    /** Draws the coin turned by [angle] radians around its vertical axis (also used by the guide). */
+    fun draw(g: Graphics2D, cx: Float, cy: Float, r: Float, angle: Float) {
+        val c = cos(angle)
+        val s = sin(angle)
         val half = r * max(abs(c), 0.04f)
         val edge = 2f * r * 0.035f * s
         g.color = RIM
@@ -598,7 +599,10 @@ class Coin : Widget() {
     private companion object {
         const val PERIOD_MS = 4000L
         val RIM = Color(0x46, 0x22, 0x0F)
-        fun face(name: String): java.awt.image.BufferedImage? =
-            Coin::class.java.getResourceAsStream("/coin/$name")?.use(javax.imageio.ImageIO::read)
+        fun face(name: String): java.awt.image.BufferedImage? {
+            // Decode in memory: the default disk cache creates a temp file for every read.
+            javax.imageio.ImageIO.setUseCache(false)
+            return Coin::class.java.getResourceAsStream("/coin/$name")?.use(javax.imageio.ImageIO::read)
+        }
     }
 }

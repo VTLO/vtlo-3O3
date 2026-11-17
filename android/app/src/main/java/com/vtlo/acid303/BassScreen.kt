@@ -37,7 +37,12 @@ import kotlin.math.roundToInt
  * The TB-303 page. Landscape fits every control on one screen (scaled to the
  * window); portrait scrolls.
  */
-class BassScreen(host: ScreenHost, private val engine: AcidEngine) : InstrumentScreen(host) {
+class BassScreen(
+    host: ScreenHost,
+    private val engine: AcidEngine,
+    /** 1 for the first bass line, 2 for the second: shown in the subtitle and used in export file names. */
+    private val number: Int = 1,
+) : InstrumentScreen(host) {
 
     private val bank: PatternBank get() = engine.bank
     private val pattern get() = engine.selectedPattern
@@ -184,7 +189,7 @@ class BassScreen(host: ScreenHost, private val engine: AcidEngine) : InstrumentS
             letterSpacing = 0.12f
         })
         titles.addView(TextView(context).apply {
-            text = context.getString(R.string.subtitle)
+            text = if (number > 1) context.getString(R.string.subtitle_n, number) else context.getString(R.string.subtitle)
             setTextColor(Palette.red)
             textSize = 10f
             letterSpacing = 0.15f
@@ -488,7 +493,7 @@ class BassScreen(host: ScreenHost, private val engine: AcidEngine) : InstrumentS
         val params = Param.entries.associateWith { engine.get(it) }
         val steps = snapshot()
         val len = steps[0]
-        host.requestExport("vtlo-303-pattern-${patternLabel(pattern)}.wav") { out ->
+        host.requestExport("vtlo-303${if (number > 1) "-$number" else ""}-pattern-${patternLabel(pattern)}.wav") { out ->
             WavExporter.export(out, loops = 4, patternLength = len) { e ->
                 params.forEach { (p, v) -> e.set(p, v) }
                 e.bank.setLength(0, len)

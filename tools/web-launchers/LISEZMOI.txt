@@ -1,0 +1,8 @@
+VTLO 303 - application web (Windows et Linux)
+
+Windows : double-cliquez sur "Lancer VTLO 303 (Windows).bat".
+Linux   : lancez ./lancer-linux.sh (nécessite python3, présent sur la plupart des distributions).
+
+L'application s'ouvre dans votre navigateur (Chrome, Edge ou Firefox récents) à l'adresse
+http://127.0.0.1:8303/. Laissez la fenêtre du serveur ouverte pendant que vous jouez ;
+fermez-la (ou Ctrl+C) pour arrêter. Tout fonctionne hors ligne, sauf l'envoi vers Audius.

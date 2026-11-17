@@ -10,8 +10,8 @@ import com.vtlo.drums.dsp.TrackParam
 import kotlin.math.roundToInt
 
 /** The drum machine page: kits, track and master knobs, the 8×16 grid. */
-class DrumScreen(host: Host) : Screen(host) {
-    private val engine = host.studio.drums
+class DrumScreen(host: Host, private val number: Int = 1) : Screen(host) {
+    private val engine = if (number == 1) host.studio.drums else host.studio.drums2
     private val bank: StepPatternBank get() = engine.bank
     private val pattern get() = engine.selectedPattern
 
@@ -38,7 +38,7 @@ class DrumScreen(host: Host) : Screen(host) {
 
     init {
         val t = TOP
-        add(TextBox({ "VTLO DRUMS" }, 22f, Colors.panelText), 16f, t + 4, 300f, 28f)
+        add(TextBox({ "VTLO DRUMS" + if (number > 1) " $number" else "" }, 22f, Colors.panelText), 16f, t + 4, 300f, 28f)
         add(TextBox({ "COMPUTER CONTROLLED  ·  RHYTHM" }, 10f, Colors.red), 16f, t + 32, 320f, 14f)
         Kit.entries.forEachIndexed { i, kit ->
             kitPads.add(add(Pad(kit.label, led = true, dark = false, hint = "All tracks: ${kit.label} kit") {
@@ -166,7 +166,7 @@ class DrumScreen(host: Host) : Screen(host) {
         val muted = BooleanArray(Kit.TRACKS) { engine.isMuted(it) }
         val rows = bank.snapshot(pattern)
         val studio = host.studio
-        host.saveWav("vtlo-drums-pattern-${patternLabel(pattern)}.wav") { out ->
+        host.saveWav("vtlo-drums${if (number > 1) "-$number" else ""}-pattern-${patternLabel(pattern)}.wav") { out ->
             val rate = 48000
             val e = DrumEngine(rate, studio.drumSamplesFor(rate))
             params.forEach { (p, v) -> e.set(p, v) }

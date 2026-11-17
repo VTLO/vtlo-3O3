@@ -66,20 +66,22 @@ abstract class Screen(protected val host: Host) {
 }
 
 /**
- * The studio window: a tab strip over one of three screens, all painted on a
+ * The studio window: a tab strip over one of five screens, all painted on a
  * canvas at a fixed design size and scaled to fit the window.
  */
 class StudioWindow(override val studio: Studio, screenFactory: (Host) -> List<Screen>) : Host {
     private val frame = JFrame("VTLO 3O3")
     private val canvas = Canvas()
     private val screens: List<Screen>
-    private var page = studio.props.getProperty("ui.page")?.toIntOrNull()?.coerceIn(0, 2) ?: 0
+    private var page = studio.props.getProperty("ui.page")?.toIntOrNull()?.coerceIn(0, PAGE_NAMES.size - 1) ?: 0
     private val strip = ArrayList<Widget>()
     private val tabs = ArrayList<Pad>()
     private val parts = ArrayList<Pad>()
     private var toastText = ""
     private var toastUntil = 0L
     private var lastPlaying = false
+    /** The French guide, open on first launch and from the ? pad. */
+    private var guide: GuideLayer? = if (studio.props.getProperty("ui.guideSeen") == "true") null else GuideLayer()
 
     private var transportOn = false
     override val playing get() = transportOn
@@ -114,21 +116,22 @@ class StudioWindow(override val studio: Studio, screenFactory: (Host) -> List<Sc
     // ─── Strip ───────────────────────────────────────────────
 
     private fun buildStrip() {
-        listOf("BASS LINE", "DRUMS", "SAMPLER").forEachIndexed { i, label ->
+        PAGE_NAMES.forEachIndexed { i, label ->
             val t = Pad(label, dark = false, hint = "Show $label (F${i + 1})") { setPage(i) }
-            t.place(8f + i * 140f, 4f, 132f, 32f)
+            t.place(8f + i * 84f, 4f, 80f, 32f)
             tabs.add(t); strip.add(t)
         }
-        listOf("BASS", "DRUMS", "SAMPLER").forEachIndexed { i, name ->
-            val p = Pad(name, hint = "Take $name in or out of the mix") {
+        PART_NAMES.forEachIndexed { i, name ->
+            val p = Pad(name, hint = "Take ${PAGE_NAMES[i]} in or out of the mix") {
                 val part = studio.engine.parts[i]
                 part.on = !part.on
                 refreshStrip()
             }
-            p.place(452f + i * 116f, 4f, 110f, 32f)
+            p.place(436f + i * 58f, 4f, 54f, 32f)
             parts.add(p); strip.add(p)
         }
-        strip.add(TextBox({ "SPACE run/stop · TAB page" }, 9.5f, Colors.panelEdge, bold = false).place(806f, 14f, 150f, 16f))
+        strip.add(Pad("?", dark = false, hint = "Guide (en français)") { guide = GuideLayer() }.place(730f, 4f, 30f, 32f))
+        strip.add(TextBox({ "SPACE run · TAB page" }, 9.5f, Colors.panelEdge, bold = false).place(772f, 14f, 170f, 16f))
         // Upper-right emblem, flipping continuously; not interactive, so it never takes a click.
         strip.add(Coin().place(962f, 3f, 34f, 34f))
     }
@@ -136,7 +139,7 @@ class StudioWindow(override val studio: Studio, screenFactory: (Host) -> List<Sc
     private fun refreshStrip() {
         tabs.forEachIndexed { i, t -> t.active = i == page }
         studio.engine.parts.forEachIndexed { i, part ->
-            val name = listOf("BASS", "DRUMS", "SAMPLER")[i]
+            val name = PART_NAMES[i]
             parts[i].active = part.on
             parts[i].text = if (part.on) "$name ON" else "$name OFF"
         }
@@ -209,15 +212,29 @@ class StudioWindow(override val studio: Studio, screenFactory: (Host) -> List<Sc
         canvas.repaint()
     }
 
+    private fun closeGuideIfDone() {
+        if (guide?.overlay?.finished != true) return
+        guide = null
+        studio.props["ui.guideSeen"] = "true"
+        runCatching { studio.save() }
+    }
+
     private fun handleKey(e: KeyEvent): Boolean {
         val pressed = e.id == KeyEvent.KEY_PRESSED
         if (e.id != KeyEvent.KEY_PRESSED && e.id != KeyEvent.KEY_RELEASED) return false
+        guide?.let {
+            if (pressed) it.key(e.keyCode)
+            closeGuideIfDone()
+            return true
+        }
         if (pressed) when (e.keyCode) {
             KeyEvent.VK_SPACE -> { toggleTransport(); return true }
             KeyEvent.VK_TAB -> { setPage(page + if (e.isShiftDown) -1 else 1); return true }
             KeyEvent.VK_F1 -> { setPage(0); return true }
             KeyEvent.VK_F2 -> { setPage(1); return true }
             KeyEvent.VK_F3 -> { setPage(2); return true }
+            KeyEvent.VK_F4 -> { setPage(3); return true }
+            KeyEvent.VK_F5 -> { setPage(4); return true }
             KeyEvent.VK_ESCAPE -> {
                 studio.engine.panic(); transportOn = false
                 return true
@@ -237,8 +254,9 @@ class StudioWindow(override val studio: Studio, screenFactory: (Host) -> List<Sc
     }
 
     /** Renders the current page to an image (used for screenshots and tests). */
-    fun snapshot(width: Int, height: Int, pageIndex: Int = page): BufferedImage {
+    fun snapshot(width: Int, height: Int, pageIndex: Int = page, guidePage: Int = -1): BufferedImage {
         page = pageIndex
+        guide = if (guidePage >= 0) GuideLayer(guidePage, animate = false) else null
         screens[page].refresh()
         refreshStrip()
         val img = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
@@ -264,6 +282,12 @@ class StudioWindow(override val studio: Studio, screenFactory: (Host) -> List<Sc
                 override fun mousePressed(e: MouseEvent) {
                     requestFocusInWindow()
                     val (x, y) = toDesign(e.x, e.y)
+                    guide?.let {
+                        it.overlay.tap(x, y)
+                        closeGuideIfDone()
+                        repaint()
+                        return
+                    }
                     val w = hit(x, y) ?: return
                     val p = Press(x, y, SwingUtilities.isRightMouseButton(e), e.clickCount, e.isShiftDown)
                     if (w.press(p)) captured = w
@@ -285,12 +309,12 @@ class StudioWindow(override val studio: Studio, screenFactory: (Host) -> List<Sc
 
                 override fun mouseMoved(e: MouseEvent) {
                     val (x, y) = toDesign(e.x, e.y)
-                    cursor = if (hit(x, y) != null) Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) else Cursor.getDefaultCursor()
+                    cursor = if (guide == null && hit(x, y) != null) Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) else Cursor.getDefaultCursor()
                 }
 
                 override fun mouseWheelMoved(e: MouseWheelEvent) {
                     val (x, y) = toDesign(e.x, e.y)
-                    hit(x, y)?.wheel(e.wheelRotation)
+                    if (guide == null) hit(x, y)?.wheel(e.wheelRotation)
                     afterInput()
                 }
             }
@@ -313,7 +337,7 @@ class StudioWindow(override val studio: Studio, screenFactory: (Host) -> List<Sc
 
         override fun getToolTipText(e: MouseEvent): String? {
             val (x, y) = toDesign(e.x, e.y)
-            return hit(x, y)?.tooltip
+            return if (guide != null) null else hit(x, y)?.tooltip
         }
 
         override fun paintComponent(g: Graphics) = paintAll(g as Graphics2D, width, height)
@@ -337,11 +361,15 @@ class StudioWindow(override val studio: Studio, screenFactory: (Host) -> List<Sc
                 g.roundRect(DW / 2 - tw / 2, DH - 52f, tw, 34f, 17f, java.awt.Color(0x2E2C2A), Colors.panelEdge)
                 g.textCentered(toastText, DW / 2, DH - 30f, font(13f), Colors.buttonText)
             }
+            guide?.paint(g, -ox / scale, -oy / scale, width / scale, height / scale)
             g.transform = saved
         }
     }
 
     companion object {
+        /** Page order: the original three first, then the second bass line and second drum machine. */
+        val PAGE_NAMES = listOf("BASS 1", "DRUMS 1", "SAMPLER", "BASS 2", "DRUMS 2")
+        val PART_NAMES = listOf("B1", "D1", "SMP", "B2", "D2")
         const val DW = 1000f
         const val DH = 620f
 

@@ -22,12 +22,7 @@ import kotlin.math.sin
  * (and stands still on its front face when the system has animations turned off).
  */
 class CoinView(context: Context) : View(context) {
-    private val front: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.coin_front)
-    private val back: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.coin_back)
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-    private val rim = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF46220F.toInt() }
-    private val shade = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val dst = RectF()
+    private val painter = CoinPainter(context)
     private var running = false
     private val start = SystemClock.uptimeMillis()
 
@@ -68,16 +63,33 @@ class CoinView(context: Context) : View(context) {
 
     override fun onDraw(canvas: Canvas) {
         val angle = if (running) 2.0 * PI * ((SystemClock.uptimeMillis() - start) % PERIOD_MS) / PERIOD_MS else 0.0
-        val c = cos(angle).toFloat()
-        val s = sin(angle).toFloat()
         val size = min(width - paddingLeft - paddingRight, height - paddingTop - paddingBottom).toFloat()
         if (size <= 0f) return
         val cx = paddingLeft + (width - paddingLeft - paddingRight) / 2f
         val cy = paddingTop + (height - paddingTop - paddingBottom) / 2f
-        val r = size / 2f
+        painter.draw(canvas, cx, cy, size / 2f, angle.toFloat())
+    }
+
+    private companion object {
+        const val PERIOD_MS = 4000L
+    }
+}
+
+/** Draws the coin turned by an angle: horizontal squash, back face past 90°, rim and shading. Shared with the guide. */
+class CoinPainter(context: Context) {
+    private val front: Bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.coin_front)
+    private val back: Bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.coin_back)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    private val rim = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF46220F.toInt() }
+    private val shade = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val dst = RectF()
+
+    fun draw(canvas: Canvas, cx: Float, cy: Float, r: Float, angle: Float) {
+        val c = cos(angle)
+        val s = sin(angle)
         val half = r * max(abs(c), 0.04f)
         // Edge thickness shows on the trailing side as the coin turns.
-        val edge = size * 0.035f * s
+        val edge = 2f * r * 0.035f * s
         dst.set(cx - half + edge, cy - r, cx + half + edge, cy + r)
         canvas.drawOval(dst, rim)
         dst.set(cx - half, cy - r, cx + half, cy + r)
@@ -88,9 +100,5 @@ class CoinView(context: Context) : View(context) {
             shade.color = dim shl 24
             canvas.drawOval(dst, shade)
         }
-    }
-
-    private companion object {
-        const val PERIOD_MS = 4000L
     }
 }

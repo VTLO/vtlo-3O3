@@ -46,6 +46,8 @@ class DrumScreen(
     host: ScreenHost,
     private val engine: DrumEngine,
     private val samplesFor: (Int) -> SampleBank,
+    /** 1 for the first drum machine, 2 for the second: shown in the title and used in export file names. */
+    private val number: Int = 1,
 ) : InstrumentScreen(host) {
 
     private val bank: StepPatternBank get() = engine.bank
@@ -147,7 +149,7 @@ class DrumScreen(
         }
         val titles = column()
         titles.addView(TextView(context).apply {
-            text = context.getString(R.string.drums_title)
+            text = if (number > 1) context.getString(R.string.drums_title_n, number) else context.getString(R.string.drums_title)
             setTextColor(Palette.panelText)
             textSize = if (landscape) 20f else 22f
             typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
@@ -439,7 +441,7 @@ class DrumScreen(
         val kits = Array(Kit.TRACKS) { live.kit(it) }
         val mutes = BooleanArray(Kit.TRACKS) { live.isMuted(it) }
         val rows = bank.snapshot(pattern)
-        host.requestExport("vtlo-drums-pattern-${patternLabel(pattern)}.wav") { out ->
+        host.requestExport("vtlo-drums${if (number > 1) "-$number" else ""}-pattern-${patternLabel(pattern)}.wav") { out ->
             val e = DrumEngine(EXPORT_RATE, samplesFor(EXPORT_RATE))
             params.forEach { (p, v) -> e.set(p, v) }
             for (t in 0 until Kit.TRACKS) {

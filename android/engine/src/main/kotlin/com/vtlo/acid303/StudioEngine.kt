@@ -11,11 +11,19 @@ import com.vtlo.sampler.dsp.SamplerParam
 import kotlin.math.exp
 
 /**
- * Bass line, drum machine and sampler as one instrument: all render in the same
+ * Two bass lines, two drum machines and a sampler as one instrument: all render in the same
  * audio callback, start on the same sample and share tempo and swing, so they
  * stay locked. Each part can be switched out of the mix (it keeps running in time).
+ *
+ * [parts] are in page order: bass line, drums, sampler, then the second bass line and second drums.
  */
-class StudioEngine(val bass: AcidEngine, val drums: DrumEngine, val sampler: SamplerEngine) : SequencerEngine {
+class StudioEngine(
+    val bass: AcidEngine,
+    val drums: DrumEngine,
+    val sampler: SamplerEngine,
+    val bass2: AcidEngine,
+    val drums2: DrumEngine,
+) : SequencerEngine {
 
     /** One instrument in the mix, with access to its (normalized) tempo and swing. */
     class Part(
@@ -35,6 +43,10 @@ class StudioEngine(val bass: AcidEngine, val drums: DrumEngine, val sampler: Sam
             { drums.get(DrumParam.SWING) }, { drums.set(DrumParam.SWING, it) }),
         Part(sampler, { sampler.get(SamplerParam.TEMPO) }, { sampler.set(SamplerParam.TEMPO, it) },
             { sampler.get(SamplerParam.SWING) }, { sampler.set(SamplerParam.SWING, it) }),
+        Part(bass2, { bass2.get(Param.TEMPO) }, { bass2.set(Param.TEMPO, it) },
+            { bass2.get(Param.SWING) }, { bass2.set(Param.SWING, it) }),
+        Part(drums2, { drums2.get(DrumParam.TEMPO) }, { drums2.set(DrumParam.TEMPO, it) },
+            { drums2.get(DrumParam.SWING) }, { drums2.set(DrumParam.SWING, it) }),
     )
 
     override val isPlaying: Boolean get() = parts.any { it.engine.isPlaying }
@@ -44,7 +56,8 @@ class StudioEngine(val bass: AcidEngine, val drums: DrumEngine, val sampler: Sam
     private var swing = Float.NaN
 
     init {
-        require(bass.sampleRate == drums.sampleRate && bass.sampleRate == sampler.sampleRate)
+        val rate = bass.sampleRate
+        require(listOf(drums.sampleRate, sampler.sampleRate, bass2.sampleRate, drums2.sampleRate).all { it == rate })
         syncTiming()
     }
 

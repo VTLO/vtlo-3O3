@@ -15,7 +15,7 @@ import com.vtlo.sampler.dsp.SamplerEngine
 import kotlin.math.roundToInt
 
 /**
- * The studio: TB-303 bass line, drum machine and sampler sharing one transport
+ * The studio: two TB-303 bass lines, two drum machines and a sampler sharing one transport
  * and one audio output. Owns engine creation, persistence and the notification text.
  */
 class StudioApp : InstrumentApp() {
@@ -24,6 +24,8 @@ class StudioApp : InstrumentApp() {
     val bass: AcidEngine get() = engine.bass
     val drums: DrumEngine get() = engine.drums
     val sampler: SamplerEngine get() = engine.sampler
+    val bass2: AcidEngine get() = engine.bass2
+    val drums2: DrumEngine get() = engine.drums2
     private lateinit var drumSamples: SampleBank
 
     override val mainActivity get() = MainActivity::class.java
@@ -31,7 +33,8 @@ class StudioApp : InstrumentApp() {
     override fun playbackTitle(): String =
         getString(
             R.string.notification_title,
-            patternLabel(bass.selectedPattern), patternLabel(drums.selectedPattern), patternLabel(sampler.selectedPattern)
+            patternLabel(bass.selectedPattern), patternLabel(drums.selectedPattern), patternLabel(sampler.selectedPattern),
+            patternLabel(bass2.selectedPattern), patternLabel(drums2.selectedPattern),
         )
 
     override fun playbackText(): String =
@@ -41,7 +44,7 @@ class StudioApp : InstrumentApp() {
 
     override fun createEngine(sampleRate: Int) {
         val bass = AcidEngine(sampleRate)
-        if (!restoreBass(bass)) {
+        if (!restoreBass(bass, "")) {
             Presets.all.forEachIndexed { i, p -> Presets.load(bass.bank, i, p) }
             bass.set(Param.TEMPO, Param.bpmToNorm(Presets.all[0].bpm.toFloat()))
         }
@@ -50,8 +53,13 @@ class StudioApp : InstrumentApp() {
         DrumStore.restore(this, drums)
         val sampler = SamplerEngine(sampleRate)
         if (!SamplerStore.restore(this, sampler)) seedSampler(sampler)
-        // The bass line's tempo and swing win at start-up; StudioEngine keeps them in step after.
-        engine = StudioEngine(bass, drums, sampler)
+        // The second bass line and drum machine start with empty patterns, so the mix is as before until they are programmed.
+        val bass2 = AcidEngine(sampleRate)
+        restoreBass(bass2, PREFIX_2)
+        val drums2 = DrumEngine(sampleRate, drumSamples)
+        DrumStore.restore(this, drums2, number = 2)
+        // The first bass line's tempo and swing win at start-up; StudioEngine keeps them in step after.
+        engine = StudioEngine(bass, drums, sampler, bass2, drums2)
         engine.parts.forEachIndexed { i, part -> part.on = prefs().getBoolean(PART_KEYS[i], true) }
     }
 
@@ -77,21 +85,28 @@ class StudioApp : InstrumentApp() {
 
     fun save() {
         prefs().edit().apply {
-            putString(KEY_PATTERNS, bass.bank.serialize())
-            putInt(KEY_SELECTED, bass.selectedPattern)
-            Param.entries.forEach { putFloat(it.key, bass.get(it)) }
+            saveBass(this, bass, "")
+            saveBass(this, bass2, PREFIX_2)
             engine.parts.forEachIndexed { i, part -> putBoolean(PART_KEYS[i], part.on) }
         }.apply()
         DrumStore.save(this, drums)
+        DrumStore.save(this, drums2, number = 2)
         SamplerStore.save(this, sampler)
     }
 
-    private fun restoreBass(bass: AcidEngine): Boolean {
+    /** The first bass line keeps its original preference keys; the second one's carry [prefix]. */
+    private fun saveBass(e: android.content.SharedPreferences.Editor, bass: AcidEngine, prefix: String) {
+        e.putString(prefix + KEY_PATTERNS, bass.bank.serialize())
+        e.putInt(prefix + KEY_SELECTED, bass.selectedPattern)
+        Param.entries.forEach { e.putFloat(prefix + it.key, bass.get(it)) }
+    }
+
+    private fun restoreBass(bass: AcidEngine, prefix: String): Boolean {
         val p = prefs()
-        val data = p.getString(KEY_PATTERNS, null) ?: return false
+        val data = p.getString(prefix + KEY_PATTERNS, null) ?: return false
         if (!bass.bank.deserialize(data)) return false
-        Param.entries.forEach { bass.set(it, p.getFloat(it.key, it.default)) }
-        bass.selectedPattern = p.getInt(KEY_SELECTED, 0).coerceIn(0, PatternBank.PATTERNS - 1)
+        Param.entries.forEach { bass.set(it, p.getFloat(prefix + it.key, it.default)) }
+        bass.selectedPattern = p.getInt(prefix + KEY_SELECTED, 0).coerceIn(0, PatternBank.PATTERNS - 1)
         return true
     }
 
@@ -99,6 +114,7 @@ class StudioApp : InstrumentApp() {
         const val PREFS = "acid303"
         const val KEY_PATTERNS = "patterns"
         const val KEY_SELECTED = "selected"
-        val PART_KEYS = listOf("bass_on", "drums_on", "sampler_on")
+        const val PREFIX_2 = "b2_"
+        val PART_KEYS = listOf("bass_on", "drums_on", "sampler_on", "bass2_on", "drums2_on")
     }
 }

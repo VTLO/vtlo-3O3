@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Builds the portable Windows zip from Linux (or WSL): app jars + a Temurin 21
-# Windows JRE + a small native launcher. Needs curl, unzip, zip and mingw-w64.
+# Windows JRE + a small native launcher, plus an installer (VTLO-3O3-Setup-windows-x64.exe)
+# when NSIS is available. Needs curl, unzip, zip and mingw-w64 (and nsis for the installer).
 #   desktop/packaging/build-portable.sh [output-dir]
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -25,3 +26,7 @@ x86_64-w64-mingw32-gcc -O2 -s -municode -mwindows -o "$app/VTLO 3O3.exe" "$here/
 cp "$here/README-windows.txt" "$app/README.txt"
 (cd "$work" && rm -f "$out/VTLO-3O3-windows-x64-portable.zip" && zip -qr "$out/VTLO-3O3-windows-x64-portable.zip" "VTLO 3O3")
 echo "$out/VTLO-3O3-windows-x64-portable.zip"
+if command -v makensis >/dev/null; then
+  (cd "$here" && makensis -V2 -DSRC="$work" -DOUT="$out/VTLO-3O3-Setup-windows-x64.exe" installer.nsi)
+  echo "$out/VTLO-3O3-Setup-windows-x64.exe"
+fi

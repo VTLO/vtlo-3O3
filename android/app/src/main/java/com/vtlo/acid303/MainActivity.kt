@@ -49,6 +49,8 @@ class MainActivity : Activity(), ScreenHost {
     private val tabs = ArrayList<PadButton>()
     private val partButtons = ArrayList<PadButton>()
     private lateinit var orientationButton: PadButton
+    private lateinit var root: FrameLayout
+    private var guide: GuideView? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val exportExecutor = Executors.newSingleThreadExecutor()
@@ -78,6 +80,8 @@ class MainActivity : Activity(), ScreenHost {
             BassScreen(this, app.bass),
             DrumScreen(this, app.drums, app::drumSamplesFor),
             SamplerScreen(this, app.sampler),
+            BassScreen(this, app.bass2, number = 2),
+            DrumScreen(this, app.drums2, app::drumSamplesFor, number = 2),
         )
         val page = savedInstanceState?.getInt(STATE_PAGE) ?: app.prefs().getInt(KEY_PAGE, 0)
 
@@ -86,11 +90,31 @@ class MainActivity : Activity(), ScreenHost {
         if (isLandscape()) hideSystemBars()
         pager.setPage(page, animate = false)
         refreshStrip()
+        // French guide on first launch (and kept open across a rotation).
+        val guidePage = savedInstanceState?.getInt(STATE_GUIDE, -1) ?: -1
+        if (guidePage >= 0) showGuide(guidePage)
+        else if (savedInstanceState == null && !app.prefs().getBoolean(KEY_GUIDE_SEEN, false)) showGuide(0)
+    }
+
+    private fun showGuide(startPage: Int = 0) {
+        if (guide != null) return
+        val view = GuideView(this, startPage) { closeGuide() }
+        guide = view
+        root.addView(view, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+        view.requestFocus()
+    }
+
+    private fun closeGuide() {
+        val view = guide ?: return
+        guide = null
+        root.removeView(view)
+        app.prefs().edit().putBoolean(KEY_GUIDE_SEEN, true).apply()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt(STATE_PAGE, pager.currentPage)
+        guide?.let { outState.putInt(STATE_GUIDE, it.overlay.page) }
     }
 
     override fun onStart() {
@@ -121,7 +145,7 @@ class MainActivity : Activity(), ScreenHost {
     // ─── UI ──────────────────────────────────────────────────
 
     private fun buildUi(): View {
-        val root = FrameLayout(this).apply { setBackgroundColor(Palette.chassis) }
+        root = FrameLayout(this).apply { setBackgroundColor(Palette.chassis) }
         applySystemInsets(root)
         val column = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(column, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
@@ -149,8 +173,12 @@ class MainActivity : Activity(), ScreenHost {
             val pad = dpi(6)
             setPadding(pad, dpi(2), pad, 0)
         }
+        // Five pages and five mix switches fit on one row only on a wide landscape screen; otherwise two rows.
+        val oneRow = landscape && resources.configuration.screenWidthDp >= ONE_ROW_MIN_WIDTH_DP
         val first = row()
-        val second = if (landscape) first else row()
+        val second = if (oneRow) first else row()
+        val tabWeight = 1f
+        val partWeight = if (oneRow) 0.75f else 0.9f
         fun add(r: LinearLayout, v: View, weight: Float) = r.addView(v, LinearLayout.LayoutParams(0, MATCH_PARENT, weight).apply {
             marginEnd = dpi(4)
         })
@@ -160,9 +188,9 @@ class MainActivity : Activity(), ScreenHost {
                 setOnClickListener { pager.setPage(i, animate = true) }
             }
             tabs.add(tab)
-            add(first, tab, 1.2f)
+            add(first, tab, tabWeight)
         }
-        if (landscape) first.addView(View(this), LinearLayout.LayoutParams(0, 1, 0.3f))
+        if (oneRow) first.addView(View(this), LinearLayout.LayoutParams(0, 1, 0.3f))
         app.engine.parts.forEachIndexed { i, part ->
             val b = PadButton(this, PART_NAMES[i]).apply {
                 setOnClickListener {
@@ -171,7 +199,7 @@ class MainActivity : Activity(), ScreenHost {
                 }
             }
             partButtons.add(b)
-            add(second, b, 1f)
+            add(second, b, partWeight)
         }
         orientationButton = PadButton(this, "").apply {
             setOnClickListener {
@@ -181,11 +209,16 @@ class MainActivity : Activity(), ScreenHost {
                 refreshStrip()
             }
         }
-        add(second, orientationButton, 1.2f)
+        add(second, orientationButton, if (oneRow) 1.2f else 1.7f)
+        val help = PadButton(this, "?", dark = false).apply {
+            contentDescription = "Afficher le guide"
+            setOnClickListener { showGuide() }
+        }
+        add(second, help, if (oneRow) 0.45f else 0.55f)
         val height = dpi(STRIP_HEIGHT_DP)
         // Upper-right emblem: decorative, square, never in the way of a tap.
         first.addView(CoinView(this), LinearLayout.LayoutParams(height - dpi(4), MATCH_PARENT))
-        if (landscape) return first.apply { layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, height) }
+        if (oneRow) return first.apply { layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, height) }
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(first, LinearLayout.LayoutParams(MATCH_PARENT, height))
@@ -201,7 +234,7 @@ class MainActivity : Activity(), ScreenHost {
             val name = PART_NAMES[i]
             b.active = part.on
             b.setLabel(if (part.on) "$name ON" else "$name OFF")
-            b.contentDescription = "$name in the mix: " + if (part.on) "on" else "off"
+            b.contentDescription = "${PAGES[i]} in the mix: " + if (part.on) "on" else "off"
         }
         val o = Orientation.saved(app.prefs())
         orientationButton.setLabel(o.label)
@@ -336,15 +369,19 @@ class MainActivity : Activity(), ScreenHost {
 
     private companion object {
         const val STATE_PAGE = "page"
+        const val STATE_GUIDE = "guide_page"
         const val KEY_PAGE = "page"
         const val KEY_ORIENTATION = "orientation"
+        const val KEY_GUIDE_SEEN = "guide_seen"
         const val STRIP_HEIGHT_DP = 40
         const val REQUEST_EXPORT = 1
         const val REQUEST_NOTIFICATIONS = 2
         const val REQUEST_PERMISSION = 3
         const val REQUEST_OPEN = 4
-        val PAGES = listOf("BASS LINE", "DRUMS", "SAMPLER")
-        val PART_NAMES = listOf("BASS", "DRUMS", "SAMPLER")
+        /** Page order: the original three first, then the second bass line and second drum machine. */
+        val PAGES = listOf("BASS 1", "DRUMS 1", "SAMPLER", "BASS 2", "DRUMS 2")
+        val PART_NAMES = listOf("B1", "D1", "SMP", "B2", "D2")
+        const val ONE_ROW_MIN_WIDTH_DP = 720
         const val KEY_ASKED_NOTIFICATIONS = "asked_notifications"
     }
 }

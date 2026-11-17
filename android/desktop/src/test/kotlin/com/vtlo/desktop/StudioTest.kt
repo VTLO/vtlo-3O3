@@ -69,4 +69,32 @@ class StudioTest {
         // The face images are bundled, so the centre of the coin is painted.
         assertTrue((img.getRGB(32, 32) ushr 24) != 0)
     }
+
+    @Test
+    fun secondBassAndDrumsStartEmptyAndSurviveRestart() {
+        val dir = tempDir()
+        val a = Studio(dir, sampleRate = 48000)
+        assertEquals(5, a.engine.parts.size)
+        // Fresh: nothing programmed on the new pages, the original mix is unchanged.
+        assertTrue((0 until 16).all { a.bass2.bank.step(0, it) and (1 shl 8) == 0 })
+        assertTrue(a.drums2.bank.row(0, 0) == 0)
+        assertTrue(a.engine.parts.all { it.on })
+
+        a.bass2.set(Param.CUTOFF, 0.31f)
+        a.bass2.bank.setStep(0, 3, com.vtlo.acid303.dsp.PatternBank.pack(40, true, true, false))
+        a.drums2.setKit(1, Kit.TR606)
+        a.drums2.bank.toggle(0, 2, 4)
+        a.engine.parts[4].on = false
+        a.save()
+
+        val b = Studio(dir, sampleRate = 48000)
+        assertEquals(0.31f, b.bass2.get(Param.CUTOFF), 0f)
+        assertEquals(40, b.bass2.bank.step(0, 3) and 0x7f)
+        assertEquals(Kit.TR606, b.drums2.kit(1))
+        assertTrue(b.drums2.bank.row(0, 2) != 0)
+        assertTrue(!b.engine.parts[4].on)
+        // The first instruments are separate: untouched by the second ones' edits.
+        assertTrue(b.bass.get(Param.CUTOFF) != 0.31f)
+        assertTrue(b.drums.bank.row(0, 2) != b.drums2.bank.row(0, 2))
+    }
 }
