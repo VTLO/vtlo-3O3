@@ -1,0 +1,50 @@
+name: Release
+
+# Publishes the files in downloads/ as a GitHub release.
+#   Actions > Release > Run workflow (tag defaults to v1.0.0)
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag
+        default: v1.0.0
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Verify checksums
+        working-directory: downloads
+        run: sha256sum -c SHA256SUMS
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          cat > notes.md <<'NOTES'
+          Ready-to-install builds of **VTLO 3O3**: two TB-303 bass lines, two 606/808/909 drum machines and a sampler, on one transport.
+
+          | Platform | File |
+          |---|---|
+          | Android 8.0+ | `VTLO-3O3-android.apk` |
+          | Windows 10/11 x64 installer | `VTLO-3O3-Setup-windows-x64.exe` |
+          | Linux, Debian/Ubuntu | `vtlo-3o3_1.0.0_amd64.deb` (`sudo apt install ./vtlo-3o3_1.0.0_amd64.deb`) |
+          | Linux, any distribution | `VTLO-3O3-linux-x64.tar.gz` (unpack and run) |
+          | Browser version, Windows and Linux | `VTLO-303-web-windows-linux.zip` (run the launcher inside) |
+
+          The desktop builds include their own Java runtime. The APK is signed with a debug key, so Android may ask you to allow installs from this source. Checksums are in `SHA256SUMS`.
+          NOTES
+          sed -i 's/^          //' notes.md
+          gh release create "$TAG" downloads/* \
+            --target main \
+            --title "VTLO 3O3 ${TAG#v}" \
+            --notes-file notes.md
